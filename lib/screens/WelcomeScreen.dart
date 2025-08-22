@@ -5,6 +5,7 @@ import 'package:colabora_plus/widgets/CustomPasswordField.dart';
 import 'package:colabora_plus/widgets/PrimaryButton.dart';
 import 'package:colabora_plus/widgets/SecondaryButton.dart';
 
+import '../services/auth_service.dart';
 import '../theme/AppColors.dart';
 import 'HomeScreen.dart';
 
@@ -19,6 +20,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  final AuthService _authService = AuthService();
 
   Future<void> _performLogin() async {
     if (_isLoading) return;
@@ -79,46 +81,31 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   Future<void> _performRegistration() async {
     if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() { _isLoading = true; });
 
     try {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
 
-      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      // Llamada única y limpia a nuestro servicio
+      final userModel = await _authService.signUpWithEmailPassword(email, password);
 
-      print('Usuario registrado exitosamente: ${userCredential.user?.uid}');
-
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(),
-          ),
-        );
-      }
-
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'email-already-in-use') {
-        print('El email ya está en uso. Intentando hacer login...');
-        await _performLogin();
-      } else if (e.code == 'weak-password') {
-        _showErrorDialog('Error de Registro', 'La contraseña es muy débil. Debe tener al menos 6 caracteres.');
+      if (userModel != null) {
+        // ¡Éxito! El usuario se creó en Auth Y su perfil en Firestore
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        }
       } else {
-        _showErrorDialog('Error de Registro', e.message ?? 'Ocurrió un error.');
+        // El servicio devolvió null, lo que significa que hubo un error
+        _showErrorDialog('Error de Registro', 'No se pudo completar el registro. El correo puede ya estar en uso o la contraseña es muy débil.');
       }
     } catch (e) {
-      _showErrorDialog('Error', 'Ocurrió un error: ${e.toString()}');
+      _showErrorDialog('Error', 'Ocurrió un error inesperado: ${e.toString()}');
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() { _isLoading = false; });
       }
     }
   }

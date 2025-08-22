@@ -41,50 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDon3Jdjc1vYYTZAQvREXLkacTlFCo5Pak',
-    appId: '1:646852870470:web:d9a13af86a5308fee2a547',
-    messagingSenderId: '646852870470',
-    projectId: 'matchhouse-ca5a8',
-    authDomain: 'matchhouse-ca5a8.firebaseapp.com',
-    storageBucket: 'matchhouse-ca5a8.firebasestorage.app',
-    measurementId: 'G-J8X8VMDNH5',
+    apiKey: 'AIzaSyDCZVSbkK4Rvtnaw4YKdshwiLlBf_MCSds',
+    appId: '1:736305070285:web:17680899113f40d38a6984',
+    messagingSenderId: '736305070285',
+    projectId: 'colaboraplus-bd22c',
+    authDomain: 'colaboraplus-bd22c.firebaseapp.com',
+    storageBucket: 'colaboraplus-bd22c.firebasestorage.app',
+    measurementId: 'G-L6047HNRE6',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyC37tMlj3FmwVceRLtZuKC55q5uHsthn04',
-    appId: '1:646852870470:android:ea7bf50edbb4b540e2a547',
-    messagingSenderId: '646852870470',
-    projectId: 'matchhouse-ca5a8',
-    storageBucket: 'matchhouse-ca5a8.firebasestorage.app',
+    apiKey: 'AIzaSyClWfKatvO1TmfSDK7LSdWu0obklYZKueE',
+    appId: '1:736305070285:android:b6feee7ba46b207d8a6984',
+    messagingSenderId: '736305070285',
+    projectId: 'colaboraplus-bd22c',
+    storageBucket: 'colaboraplus-bd22c.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBUaOeXhwPuxEG-k0HpCq4qN7VRjp_n8Y4',
-    appId: '1:646852870470:ios:06c400ef185f62aae2a547',
-    messagingSenderId: '646852870470',
-    projectId: 'matchhouse-ca5a8',
-    storageBucket: 'matchhouse-ca5a8.firebasestorage.app',
-    iosClientId: '646852870470-lht0q08mhhk4g2245sbugtbj3g9ju80e.apps.googleusercontent.com',
+    apiKey: 'AIzaSyCYPZdqZ_8_C3CfkzbIzXW-DPgQhR0mG_s',
+    appId: '1:736305070285:ios:f7a88dff498e75d88a6984',
+    messagingSenderId: '736305070285',
+    projectId: 'colaboraplus-bd22c',
+    storageBucket: 'colaboraplus-bd22c.firebasestorage.app',
     iosBundleId: 'com.example.matchhouseFlutter',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBUaOeXhwPuxEG-k0HpCq4qN7VRjp_n8Y4',
-    appId: '1:646852870470:ios:06c400ef185f62aae2a547',
-    messagingSenderId: '646852870470',
-    projectId: 'matchhouse-ca5a8',
-    storageBucket: 'matchhouse-ca5a8.firebasestorage.app',
-    iosClientId: '646852870470-lht0q08mhhk4g2245sbugtbj3g9ju80e.apps.googleusercontent.com',
+    apiKey: 'AIzaSyCYPZdqZ_8_C3CfkzbIzXW-DPgQhR0mG_s',
+    appId: '1:736305070285:ios:f7a88dff498e75d88a6984',
+    messagingSenderId: '736305070285',
+    projectId: 'colaboraplus-bd22c',
+    storageBucket: 'colaboraplus-bd22c.firebasestorage.app',
     iosBundleId: 'com.example.matchhouseFlutter',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDon3Jdjc1vYYTZAQvREXLkacTlFCo5Pak',
-    appId: '1:646852870470:web:6106f58ec79baa1be2a547',
-    messagingSenderId: '646852870470',
-    projectId: 'matchhouse-ca5a8',
-    authDomain: 'matchhouse-ca5a8.firebaseapp.com',
-    storageBucket: 'matchhouse-ca5a8.firebasestorage.app',
-    measurementId: 'G-6ZHHWF2S7J',
+    apiKey: 'AIzaSyDCZVSbkK4Rvtnaw4YKdshwiLlBf_MCSds',
+    appId: '1:736305070285:web:26b38c51a5993d368a6984',
+    messagingSenderId: '736305070285',
+    projectId: 'colaboraplus-bd22c',
+    authDomain: 'colaboraplus-bd22c.firebaseapp.com',
+    storageBucket: 'colaboraplus-bd22c.firebasestorage.app',
+    measurementId: 'G-XZGBC5HT3Q',
   );
+
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:colabora_plus/models/UserModel.dart'; // Asegúrate que la ruta sea correcta
-import 'package:colabora_plus/services/interfaces/IProfileService.dart'; // Asegúrate que la ruta sea correcta
-import '../services/KtorUserService.dart';
+import 'package:colabora_plus/models/UserModel.dart';
 import 'package:colabora_plus/theme/AppColors.dart';
 import 'package:colabora_plus/widgets/placeholder_tab.dart';
-// import 'package:colabora_plus/screens/create_raffle_screen.dart'; // Lo usaremos después
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+// --- 1. IMPORTAMOS LA NUEVA PESTAÑA DE PERFIL ---
+import 'package:colabora_plus/screens/tabs/profile_tab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,9 +17,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-
-  // --- MANTENEMOS LA LÓGICA DE CARGA DE USUARIO ---
-  final IProfileService _userService = KtorUserService();
   UserModel? _userProfile;
   bool _isLoadingProfile = true;
 
@@ -27,28 +26,36 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadUserData();
   }
 
-  // Simplificamos la carga para traer solo el perfil
   Future<void> _loadUserData() async {
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+
+    if (firebaseUser == null) {
+      setState(() => _isLoadingProfile = false);
+      return;
+    }
+
     try {
-      final user = await _userService.getUserProfile();
+      final docSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .get();
+
       if (mounted) {
-        setState(() {
-          _userProfile = user;
-          _isLoadingProfile = false;
-        });
+        if (docSnapshot.exists) {
+          setState(() {
+            _userProfile = UserModel.fromMap(docSnapshot.data()!, docSnapshot.id);
+            _isLoadingProfile = false;
+          });
+        } else {
+          setState(() => _isLoadingProfile = false);
+        }
       }
     } catch (e) {
-      print("Error cargando el perfil: $e");
-      if (mounted) {
-        setState(() {
-          _isLoadingProfile = false;
-        });
-      }
+      if (mounted) setState(() => _isLoadingProfile = false);
     }
   }
-  // --- FIN DE LA LÓGICA DE CARGA ---
 
-  // Lista de nuestras pestañas placeholder
+  // --- 2. ACTUALIZAMOS LA LISTA DE PÁGINAS ---
   List<Widget> _buildPages() {
     return [
       const PlaceholderTab(
@@ -63,14 +70,10 @@ class _HomeScreenState extends State<HomeScreen> {
         title: 'Historial de Rifas',
         message: 'Aquí verás una lista de todas las rifas pasadas y sus ganadores.',
       ),
-      // Esta pestaña mostrará el estado de la carga del perfil
       _isLoadingProfile
           ? const Center(child: CircularProgressIndicator())
           : _userProfile != null
-          ? PlaceholderTab(
-        title: 'Mi Perfil',
-        message: 'Aquí irá tu información personal (Nombre: ${_userProfile!.name}) y una lista de las rifas que has creado para poder gestionarlas.',
-      )
+          ? ProfileTab(user: _userProfile!)
           : const PlaceholderTab(
         title: 'Mi Perfil',
         message: 'No se pudo cargar la información del perfil. Intenta de nuevo más tarde.',
@@ -93,11 +96,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Por ahora solo mostramos un mensaje
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Aquí se abrirá la pantalla para crear una rifa.')),
           );
-          // Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateRaffleScreen()));
         },
         shape: const CircleBorder(),
         backgroundColor: AppColors.accentGreen,
@@ -113,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: <Widget>[
             _buildTabItem(icon: Icons.home, index: 0, label: 'Inicio'),
             _buildTabItem(icon: Icons.confirmation_number, index: 1, label: 'Participo'),
-            const SizedBox(width: 48), // Espacio para el botón
+            const SizedBox(width: 48),
             _buildTabItem(icon: Icons.history, index: 2, label: 'Historial'),
             _buildTabItem(icon: Icons.person, index: 3, label: 'Perfil'),
           ],
@@ -130,12 +131,12 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () => _onItemTapped(index),
       borderRadius: BorderRadius.circular(50),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: color),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(label, style: TextStyle(color: color, fontSize: 12)),
           ],
         ),
