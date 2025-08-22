@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>646852870470-lht0q08mhhk4g2245sbugtbj3g9ju80e.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.646852870470-lht0q08mhhk4g2245sbugtbj3g9ju80e</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBUaOeXhwPuxEG-k0HpCq4qN7VRjp_n8Y4</string>
+	<key>GCM_SENDER_ID</key>
+	<string>646852870470</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.matchhouseFlutter</string>
+	<key>PROJECT_ID</key>
+	<string>matchhouse-ca5a8</string>
+	<key>STORAGE_BUCKET</key>
+	<string>matchhouse-ca5a8.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:646852870470:ios:06c400ef185f62aae2a547</string>
+</dict>
+</plist>

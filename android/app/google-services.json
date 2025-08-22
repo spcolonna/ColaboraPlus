@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "646852870470",
+    "project_id": "matchhouse-ca5a8",
+    "storage_bucket": "matchhouse-ca5a8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:646852870470:android:ea7bf50edbb4b540e2a547",
+        "android_client_info": {
+          "package_name": "com.example.matchhouse_flutter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "646852870470-nhg61tqs3s8k48r6fresmm6j1ie791n5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC37tMlj3FmwVceRLtZuKC55q5uHsthn04"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "646852870470-nhg61tqs3s8k48r6fresmm6j1ie791n5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
