@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/House.dart';
-import '../models/SearchFilterModel.dart';
-import '../models/UserModel.dart';
+import 'package:colabora_plus/models/UserModel.dart'; // Asegúrate que la ruta sea correcta
+import 'package:colabora_plus/services/interfaces/IProfileService.dart'; // Asegúrate que la ruta sea correcta
 import '../services/KtorUserService.dart';
-import '../services/interfaces/IProfileService.dart';
-import 'FavoritesPage.dart';
-import 'ProfilePage.dart';
-import 'discover_page.dart';
-import 'MapPage.dart';
+import 'package:colabora_plus/theme/AppColors.dart';
+import 'package:colabora_plus/widgets/placeholder_tab.dart';
+// import 'package:colabora_plus/screens/create_raffle_screen.dart'; // Lo usaremos después
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,12 +15,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  final IProfileService _userService = KtorUserService();
 
+  // --- MANTENEMOS LA LÓGICA DE CARGA DE USUARIO ---
+  final IProfileService _userService = KtorUserService();
   UserModel? _userProfile;
-  SearchFilterModel? _userFilters;
   bool _isLoadingProfile = true;
-  List<House> _favoriteHouses = [];
 
   @override
   void initState() {
@@ -31,19 +27,13 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadUserData();
   }
 
+  // Simplificamos la carga para traer solo el perfil
   Future<void> _loadUserData() async {
     try {
-      final results = await Future.wait([
-        _userService.getUserProfile(),
-        _userService.getFavoriteHouses(),
-        _userService.getUserFilters(),
-      ]);
-
+      final user = await _userService.getUserProfile();
       if (mounted) {
         setState(() {
-          _userProfile = results[0] as UserModel;
-          _favoriteHouses = results[1] as List<House>;
-          _userFilters = results[2] as SearchFilterModel;
+          _userProfile = user;
           _isLoadingProfile = false;
         });
       }
@@ -56,69 +46,35 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
+  // --- FIN DE LA LÓGICA DE CARGA ---
 
-  Future<void> _saveFilters(SearchFilterModel newFilters) async {
-    await _userService.saveFilters(newFilters);
-    setState(() {
-      _userFilters = newFilters;
-    });
-  }
-
-  void _toggleFavorite(String houseId) async {
-    if (_userProfile == null) {
-      print("Error: No se puede modificar favoritos sin un perfil de usuario.");
-      return;
-    }
-
-    final isCurrentlyFavorite = _favoriteHouses.any((house) => house.id == houseId);
-
-    print('Cambiando estado de favorito para la casa $houseId. Actualmente es favorito: $isCurrentlyFavorite');
-
-    try {
-      if (isCurrentlyFavorite) {
-        await _userService.removeFavorite(houseId);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Eliminado de favoritos.'), duration: Duration(seconds: 1))
-          );
-        }
-      } else {
-        await _userService.addFavorite(houseId);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('¡Añadido a favoritos!'), duration: Duration(seconds: 1))
-          );
-        }
-      }
-
-      _loadUserData();
-
-    } catch (e) {
-      print("Error al hacer toggle de favorito: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error al actualizar favoritos: ${e.toString()}'))
-        );
-      }
-    }
-  }
-
+  // Lista de nuestras pestañas placeholder
   List<Widget> _buildPages() {
     return [
-      const DiscoverPage(),
-      MapPage(favoriteHouses: _favoriteHouses, onFavoriteToggle: _toggleFavorite),
-      FavoritesPage(favoriteHouses: _favoriteHouses, onFavoriteToggle: _toggleFavorite),
-      if (_userProfile != null)
-        ProfilePage(
-          user: _userProfile!,
-          filters: _userFilters!,
-          onProfileUpdated: _loadUserData,
-          onFiltersSaved: _saveFilters,
-        )
-      else if (_isLoadingProfile)
-        const Center(child: CircularProgressIndicator())
-      else
-        const Center(child: Text("No se pudo cargar el perfil.")),
+      const PlaceholderTab(
+        title: 'Rifas Activas',
+        message: 'Aquí se mostrará una lista de todas las rifas disponibles, con un buscador en la parte superior.',
+      ),
+      const PlaceholderTab(
+        title: 'Mis Participaciones',
+        message: 'Aquí verás una lista de las rifas en las que has comprado números.',
+      ),
+      const PlaceholderTab(
+        title: 'Historial de Rifas',
+        message: 'Aquí verás una lista de todas las rifas pasadas y sus ganadores.',
+      ),
+      // Esta pestaña mostrará el estado de la carga del perfil
+      _isLoadingProfile
+          ? const Center(child: CircularProgressIndicator())
+          : _userProfile != null
+          ? PlaceholderTab(
+        title: 'Mi Perfil',
+        message: 'Aquí irá tu información personal (Nombre: ${_userProfile!.name}) y una lista de las rifas que has creado para poder gestionarlas.',
+      )
+          : const PlaceholderTab(
+        title: 'Mi Perfil',
+        message: 'No se pudo cargar la información del perfil. Intenta de nuevo más tarde.',
+      ),
     ];
   }
 
@@ -131,39 +87,58 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack( // IndexedStack mantiene el estado de las pestañas al cambiar
+      body: IndexedStack(
         index: _selectedIndex,
         children: _buildPages(),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home), // Icono diferente cuando está activo
-            label: 'Inicio',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            activeIcon: Icon(Icons.map),
-            label: 'Mapa',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_outline),
-            activeIcon: Icon(Icons.favorite),
-            label: 'Favoritos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Perfil',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.deepPurple,
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Por ahora solo mostramos un mensaje
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Aquí se abrirá la pantalla para crear una rifa.')),
+          );
+          // Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateRaffleScreen()));
+        },
+        shape: const CircleBorder(),
+        backgroundColor: AppColors.accentGreen,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        color: AppColors.primaryBlue,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: <Widget>[
+            _buildTabItem(icon: Icons.home, index: 0, label: 'Inicio'),
+            _buildTabItem(icon: Icons.confirmation_number, index: 1, label: 'Participo'),
+            const SizedBox(width: 48), // Espacio para el botón
+            _buildTabItem(icon: Icons.history, index: 2, label: 'Historial'),
+            _buildTabItem(icon: Icons.person, index: 3, label: 'Perfil'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabItem({required IconData icon, required int index, required String label}) {
+    final isSelected = _selectedIndex == index;
+    final color = isSelected ? AppColors.accentGreen : AppColors.textWhite.withOpacity(0.8);
+
+    return InkWell(
+      onTap: () => _onItemTapped(index),
+      borderRadius: BorderRadius.circular(50),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(height: 2),
+            Text(label, style: TextStyle(color: color, fontSize: 12)),
+          ],
+        ),
       ),
     );
   }
