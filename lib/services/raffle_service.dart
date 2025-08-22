@@ -60,4 +60,22 @@ class RaffleService {
         .doc(ticketId)
         .update({'isPaid': true});
   }
+
+  Future<void> updateRaffle({
+    required String raffleId,
+    required String newTitle,
+    required double newTicketPrice,
+    required DateTime newDrawDate,
+    required List<PrizeModel> newPrizes,
+  }) async {
+    // Convertimos la lista de premios a una lista de mapas
+    final prizesAsMaps = newPrizes.map((prize) => prize.toMap()).toList();
+
+    await _firestore.collection('raffles').doc(raffleId).update({
+      'title': newTitle,
+      'ticketPrice': newTicketPrice,
+      'drawDate': Timestamp.fromDate(newDrawDate),
+      'prizes': prizesAsMaps,
+    });
+  }
 }
