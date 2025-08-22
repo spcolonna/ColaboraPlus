@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:matchhouse_flutter/models/SearchFilterModel.dart';
-import 'package:matchhouse_flutter/services/interfaces/ILocationService.dart';
-import 'package:matchhouse_flutter/services/KtorLocationService.dart';
+import 'package:colabora_plus/models/SearchFilterModel.dart';
+import 'package:colabora_plus/services/interfaces/ILocationService.dart';
+import 'package:colabora_plus/services/KtorLocationService.dart';
 
 class SearchFiltersTab extends StatefulWidget {
   final SearchFilterModel filters;

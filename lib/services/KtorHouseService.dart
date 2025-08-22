@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart' hide User;
-import 'package:matchhouse_flutter/services/interfaces/IHouseService.dart';
+import 'package:colabora_plus/services/interfaces/IHouseService.dart';
 import '../models/House.dart';
 import 'package:latlong2/latlong.dart';
 

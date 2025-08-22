@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:matchhouse_flutter/models/SearchFilterModel.dart';
-import 'package:matchhouse_flutter/models/UserModel.dart';
-import 'package:matchhouse_flutter/screens/tabs/PersonalInfoTab.dart';
-import 'package:matchhouse_flutter/screens/tabs/SearchFiltersTab.dart';
-import 'package:matchhouse_flutter/screens/tabs/MyHousesTab.dart';
+import 'package:colabora_plus/models/SearchFilterModel.dart';
+import 'package:colabora_plus/models/UserModel.dart';
+import 'package:colabora_plus/screens/tabs/PersonalInfoTab.dart';
+import 'package:colabora_plus/screens/tabs/SearchFiltersTab.dart';
+import 'package:colabora_plus/screens/tabs/MyHousesTab.dart';
 
 class ProfilePage extends StatefulWidget {
   final UserModel user;

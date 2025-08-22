@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:matchhouse_flutter/models/House.dart';
-import 'package:matchhouse_flutter/screens/HouseDetailPage.dart';
+import 'package:colabora_plus/models/House.dart';
+import 'package:colabora_plus/screens/HouseDetailPage.dart';
 
 import 'HouseDetailPage.dart'; // <-- 1. AÑADE LA IMPORTACIÓN A LA PÁGINA DE DETALLE
 

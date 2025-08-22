@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:matchhouse_flutter/models/House.dart';
-import 'package:matchhouse_flutter/models/SearchFilterModel.dart';
+import 'package:colabora_plus/models/House.dart';
+import 'package:colabora_plus/models/SearchFilterModel.dart';
 
 class FirestoreStreamService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;

@@ -1,8 +1,9 @@
+import 'package:colabora_plus/theme/AppColors.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
-import 'package:matchhouse_flutter/screens/WelcomeScreen.dart';
+import 'package:colabora_plus/screens/WelcomeScreen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,11 +19,22 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'App de Bienvenida',
+      title: 'Colabora+',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        scaffoldBackgroundColor: AppColors.backgroundGray,
+
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primaryBlue,
+          primary: AppColors.primaryBlue,
+          secondary: AppColors.accentGreen,
+          background: AppColors.backgroundGray,
+        ),
+
+        textTheme: const TextTheme(
+          displayLarge: TextStyle(color: AppColors.textDark),
+          bodyMedium: TextStyle(color: AppColors.textDark),
+        ),
       ),
       home: const WelcomeScreen(),
     );

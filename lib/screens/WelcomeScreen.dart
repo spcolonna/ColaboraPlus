@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Asegúrate de que esta importación esté
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:colabora_plus/widgets/CustomInputField.dart';
+import 'package:colabora_plus/widgets/CustomPasswordField.dart';
+import 'package:colabora_plus/widgets/PrimaryButton.dart';
+import 'package:colabora_plus/widgets/SecondaryButton.dart';
 
-// Importamos los widgets y la nueva pantalla
-import 'package:matchhouse_flutter/widgets/CustomInputField.dart';
-import 'package:matchhouse_flutter/widgets/CustomPasswordField.dart';
-import 'package:matchhouse_flutter/widgets/PrimaryButton.dart';
-import 'package:matchhouse_flutter/widgets/SecondaryButton.dart';
-import 'package:matchhouse_flutter/screens/HomeScreen.dart';
+import '../theme/AppColors.dart';
+import 'HomeScreen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -20,7 +20,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  // --- FUNCIÓN DE LOGIN ACTUALIZADA ---
   Future<void> _performLogin() async {
     if (_isLoading) return;
 
@@ -153,70 +152,86 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          child: Padding(
+      backgroundColor: AppColors.backgroundGray, // Fondo general gris claro
+      body: Column(
+        children: [
+          // 1. Contenedor superior con el color oscuro
+          Container(
+            width: double.infinity,
+            height: MediaQuery.of(context).size.height * 0.35, // Ocupa el 35% de la pantalla
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            decoration: const BoxDecoration(
+              color: AppColors.primaryBlue,
+              borderRadius: BorderRadius.vertical(
+                bottom: Radius.circular(50), // <-- ESTO APLICA LA CURVA A AMBAS ESQUINAS INFERIORES
+              ),
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Image.asset(
-                  'assets/logo/NidoLogo.jpeg',
-                  height: 120,
-                ),
+              children: [
+                Image.asset('assets/logo/Logo.jpeg', height: 90),
                 const SizedBox(height: 16),
-
-                const Text(
-                  'Nido',
+                Text(
+                  'Colabora+',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 42.0,
                     fontWeight: FontWeight.bold,
-                    // Para un estilo más elegante, considera usar el paquete google_fonts
-                    // fontFamily: GoogleFonts.lato().fontFamily,
+                    color: AppColors.textWhite, // Texto blanco
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Encuentra tu lugar ideal',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 48.0),
-                CustomInputField(
-                  controller: _emailController,
-                  labelText: 'Correo Electrónico',
-                  icon: Icons.email_outlined,
-                ),
-                const SizedBox(height: 16.0),
-                CustomPasswordField(
-                  controller: _passwordController,
-                ),
-                const SizedBox(height: 32.0),
-
-                if (_isLoading)
-                  const CircularProgressIndicator()
-                else
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SecondaryButton(
-                        text: 'Login',
-                        onPressed: _performLogin,
-                      ),
-                      const SizedBox(height: 16.0),
-                      PrimaryButton(
-                        text: 'Registro',
-                        onPressed: _performRegistration,
-                      ),
-                    ],
-                  ),
               ],
             ),
           ),
-        ),
+          // 2. Espacio para el formulario
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Crea y participa en rifas fácilmente',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 18, color: AppColors.textLight),
+                    ),
+                    const SizedBox(height: 32.0),
+                    CustomInputField(
+                      controller: _emailController,
+                      labelText: 'Correo Electrónico',
+                      icon: Icons.email_outlined,
+                    ),
+                    const SizedBox(height: 16.0),
+                    CustomPasswordField(
+                      controller: _passwordController,
+                    ),
+                    const SizedBox(height: 32.0),
+                    if (_isLoading)
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentGreen),
+                      )
+                    else
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SecondaryButton(
+                            text: 'Iniciar Sesión',
+                            onPressed: _performLogin,
+                          ),
+                          const SizedBox(height: 16.0),
+                          PrimaryButton(
+                            text: 'Crear Cuenta',
+                            onPressed: _performRegistration,
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

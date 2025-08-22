@@ -5,12 +5,12 @@ import 'package:latlong2/latlong.dart';
 import 'package:uuid/uuid.dart';
 import 'package:dotted_border/dotted_border.dart';
 
-import 'package:matchhouse_flutter/models/House.dart';
-import 'package:matchhouse_flutter/services/interfaces/IProfileService.dart';
-import 'package:matchhouse_flutter/services/KtorUserService.dart';
-import 'package:matchhouse_flutter/services/StorageService.dart';
+import 'package:colabora_plus/models/House.dart';
+import 'package:colabora_plus/services/interfaces/IProfileService.dart';
+import 'package:colabora_plus/services/KtorUserService.dart';
+import 'package:colabora_plus/services/StorageService.dart';
 
-import 'package:matchhouse_flutter/screens/tabs/myHousesSubScreens/MapPickerPage.dart';
+import 'package:colabora_plus/screens/tabs/myHousesSubScreens/MapPickerPage.dart';
 
 import '../../../services/KtorLocationService.dart';
 import '../../../services/interfaces/ILocationService.dart';

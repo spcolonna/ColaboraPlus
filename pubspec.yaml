@@ -1,4 +1,4 @@
-name: matchhouse_flutter
+name: colabora_plus
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -105,4 +105,4 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/logo/NidoLogo.jpeg"
+  image_path: "assets/logo/Logo.jpeg"

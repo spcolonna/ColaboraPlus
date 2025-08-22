@@ -154,7 +154,7 @@ class _MapPageState extends State<MapPage> {
       children: [
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.example.matchhouse_flutter',
+          userAgentPackageName: 'com.example.colabora_plus',
         ),
         MarkerLayer(markers: markers),
       ],

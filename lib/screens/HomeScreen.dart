@@ -110,10 +110,10 @@ class _HomeScreenState extends State<HomeScreen> {
       FavoritesPage(favoriteHouses: _favoriteHouses, onFavoriteToggle: _toggleFavorite),
       if (_userProfile != null)
         ProfilePage(
-            user: _userProfile!,
-            filters: _userFilters!,
-            onProfileUpdated: _loadUserData,
-            onFiltersSaved: _saveFilters,
+          user: _userProfile!,
+          filters: _userFilters!,
+          onProfileUpdated: _loadUserData,
+          onFiltersSaved: _saveFilters,
         )
       else if (_isLoadingProfile)
         const Center(child: CircularProgressIndicator())

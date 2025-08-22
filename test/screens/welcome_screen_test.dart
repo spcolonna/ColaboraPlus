@@ -1,7 +1,7 @@
 // Importa las librerías necesarias para el test.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:matchhouse_flutter/screens/WelcomeScreen.dart';
+import 'package:colabora_plus/screens/WelcomeScreen.dart';
 
 void main() {
   testWidgets('La pantalla de bienvenida muestra el título y los dos botones', (WidgetTester tester) async {

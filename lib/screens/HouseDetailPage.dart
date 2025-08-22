@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:matchhouse_flutter/models/House.dart';
+import 'package:colabora_plus/models/House.dart';
 
 import 'FullscreenGalleryPage.dart';
 
