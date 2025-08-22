@@ -3,6 +3,8 @@ import 'package:colabora_plus/models/UserModel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:colabora_plus/theme/AppColors.dart';
 import '../../models/raffle_model.dart';
+import '../../services/raffle_service.dart';
+import '../raffle_management_screen.dart';
 
 class ProfileTab extends StatefulWidget {
   final UserModel user;
@@ -16,35 +18,15 @@ class ProfileTab extends StatefulWidget {
 class _ProfileTabState extends State<ProfileTab> {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
-
   bool _isEditing = false;
-  bool _isLoadingRaffles = true;
-  List<RaffleModel> _myRaffles = [];
+  final RaffleService _raffleService = RaffleService();
+
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.user.name);
     _phoneController = TextEditingController(text: widget.user.phoneNumber);
-    _loadMyRaffles();
-  }
-
-  Future<void> _loadMyRaffles() async {
-    // Esta función no cambia, sigue cargando las rifas del usuario
-    try {
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('raffles')
-          .where('creatorId', isEqualTo: widget.user.uid)
-          .get();
-      if (mounted) {
-        setState(() {
-          _myRaffles = querySnapshot.docs.map((doc) => RaffleModel.fromFirestore(doc)).toList();
-          _isLoadingRaffles = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isLoadingRaffles = false);
-    }
   }
 
   Future<void> _saveProfile() async {
@@ -103,7 +85,7 @@ class _ProfileTabState extends State<ProfileTab> {
               ),
             ),
             const SizedBox(height: 16),
-            _buildRafflesList(),
+            _buildRafflesListWithStream(),
           ],
         ),
       ),
@@ -194,49 +176,68 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  Widget _buildRafflesList() {
-    if (_isLoadingRaffles) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    // ESTADO VACÍO: Muestra un mensaje amigable si no hay rifas.
-    if (_myRaffles.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40.0),
-          child: Column(
-            children: [
-              Icon(Icons.receipt_long, size: 60, color: Colors.grey[400]),
-              const SizedBox(height: 16),
-              const Text(
-                'Aquí aparecerán las rifas que crees',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+  Widget _buildRafflesListWithStream() {
+    return StreamBuilder<QuerySnapshot>(
+      // 1. Nos suscribimos al stream de nuestro servicio
+      stream: _raffleService.getMyRafflesStream(),
+      // 2. El builder se ejecuta cada vez que llegan datos nuevos
+      builder: (context, snapshot) {
+        // Manejo de estado de carga
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        // Manejo de errores
+        if (snapshot.hasError) {
+          return const Center(child: Text('Error al cargar las rifas.'));
+        }
+        // Manejo de estado sin datos (lista vacía)
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40.0),
+              child: Column(
+                children: [
+                  Icon(Icons.receipt_long, size: 60, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  const Text('Aquí aparecerán las rifas que crees',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Muestra la lista si hay rifas
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _myRaffles.length,
-      itemBuilder: (context, index) {
-        final raffle = _myRaffles[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ListTile(
-            leading: const Icon(Icons.confirmation_number_outlined),
-            title: Text(raffle.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('Sorteo: ${raffle.drawDate.day}/${raffle.drawDate.month}/${raffle.drawDate.year}'),
-            trailing: IconButton(
-              icon: const Icon(Icons.arrow_forward_ios, size: 16),
-              onPressed: () { /* Navegar a la pantalla de gestión de esta rifa específica */ },
             ),
-          ),
+          );
+        }
+
+        // Si todo está bien y hay datos, construimos la lista
+        final raffleDocs = snapshot.data!.docs;
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: raffleDocs.length,
+          itemBuilder: (context, index) {
+            final raffle = RaffleModel.fromFirestore(raffleDocs[index]);
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 8.0),
+              child: ListTile(
+                leading: const Icon(Icons.confirmation_number_outlined),
+                title: Text(raffle.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('Sorteo: ${raffle.drawDate.day}/${raffle.drawDate.month}/${raffle.drawDate.year}'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => RaffleManagementScreen(raffle: raffle),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
         );
       },
     );

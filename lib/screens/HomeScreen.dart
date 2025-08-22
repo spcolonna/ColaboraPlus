@@ -8,6 +8,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 // --- 1. IMPORTAMOS LA NUEVA PESTAÑA DE PERFIL ---
 import 'package:colabora_plus/screens/tabs/profile_tab.dart';
 
+import 'create_raffle_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -96,8 +98,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Aquí se abrirá la pantalla para crear una rifa.')),
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreateRaffleScreen()),
           );
         },
         shape: const CircleBorder(),
