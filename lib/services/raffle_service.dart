@@ -78,4 +78,13 @@ class RaffleService {
       'prizes': prizesAsMaps,
     });
   }
+
+  Stream<QuerySnapshot> getAllActiveRafflesStream() {
+    // Más adelante podríamos añadir un .where('status', isEqualTo: 'active')
+    // para filtrar solo las que no han sido sorteadas.
+    return _firestore
+        .collection('raffles')
+        .orderBy('drawDate', descending: false) // Muestra primero las más próximas a sortearse
+        .snapshots();
+  }
 }

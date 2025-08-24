@@ -8,6 +8,7 @@ class RaffleModel {
   final DateTime drawDate;
   final double ticketPrice;
   final List<PrizeModel> prizes;
+  final int soldTicketsCount;
 
   RaffleModel({
     required this.id,
@@ -16,25 +17,19 @@ class RaffleModel {
     required this.drawDate,
     required this.ticketPrice,
     required this.prizes,
+    this.soldTicketsCount = 0,
   });
 
   factory RaffleModel.fromFirestore(DocumentSnapshot doc) {
     Map data = doc.data() as Map<String, dynamic>;
 
-    // --- LÓGICA CORREGIDA Y MÁS SEGURA ---
     List<PrizeModel> prizesList = [];
-    // 1. Verificamos que 'prizes' no sea nulo y que sea una lista
-    if (data['prizes'] != null && data['prizes'] is List) {
-      // 2. Usamos 'List.from' para crear una copia segura
-      final rawPrizes = List.from(data['prizes']);
-
-      // 3. Iteramos y solo convertimos los elementos que son mapas válidos
-      prizesList = rawPrizes
-          .where((prizeData) => prizeData is Map<String, dynamic>) // Filtramos nulos o tipos incorrectos
+    if (data['prizes'] is List) {
+      prizesList = (data['prizes'] as List)
+          .where((prizeData) => prizeData is Map<String, dynamic>)
           .map((prizeData) => PrizeModel.fromMap(prizeData))
           .toList();
     }
-    // --- FIN DE LA CORRECCIÓN ---
 
     return RaffleModel(
       id: doc.id,
@@ -43,6 +38,7 @@ class RaffleModel {
       drawDate: (data['drawDate'] as Timestamp).toDate(),
       ticketPrice: (data['ticketPrice'] as num?)?.toDouble() ?? 0.0,
       prizes: prizesList,
+      soldTicketsCount: data['soldTicketsCount'] ?? 0,
     );
   }
 
@@ -53,6 +49,7 @@ class RaffleModel {
       'drawDate': Timestamp.fromDate(drawDate),
       'ticketPrice': ticketPrice,
       'prizes': prizes.map((prize) => prize.toMap()).toList(),
+      'soldTicketsCount': soldTicketsCount,
     };
   }
 }

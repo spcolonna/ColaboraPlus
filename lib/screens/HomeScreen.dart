@@ -1,3 +1,4 @@
+import 'package:colabora_plus/screens/tabs/active_raffles_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:colabora_plus/models/UserModel.dart';
 import 'package:colabora_plus/theme/AppColors.dart';
@@ -57,13 +58,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // --- 2. ACTUALIZAMOS LA LISTA DE PÁGINAS ---
   List<Widget> _buildPages() {
     return [
-      const PlaceholderTab(
-        title: 'Rifas Activas',
-        message: 'Aquí se mostrará una lista de todas las rifas disponibles, con un buscador en la parte superior.',
-      ),
+      const ActiveRafflesTab(),
       const PlaceholderTab(
         title: 'Mis Participaciones',
         message: 'Aquí verás una lista de las rifas en las que has comprado números.',
