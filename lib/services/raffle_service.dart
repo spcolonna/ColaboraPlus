@@ -103,47 +103,36 @@ class RaffleService {
     return query.docs.isNotEmpty;
   }
 
-  /// Registra la compra de un nuevo boleto.
   Future<void> purchaseTicket({
     required RaffleModel raffle,
     required List<int> numbers,
     required PaymentMethod paymentMethod,
   }) async {
     final user = _auth.currentUser;
-    // Asumimos que HomeScreen ya cargó el perfil, pero en una app más grande,
-    // podríamos pasar el UserModel o buscarlo aquí.
     final userName = user?.displayName ?? user?.email ?? 'Usuario Anónimo';
 
     if (user == null) {
       throw Exception('Debes iniciar sesión para comprar un boleto.');
     }
 
-    final newTicket = TicketModel(
-      id: '', // Firestore lo genera
-      raffleId: raffle.id,
-      userId: user.uid,
-      userName: userName,
-      ticketNumbers: numbers,
-      paymentMethod: paymentMethod,
-      // Si el pago es manual, no está pagado hasta que el admin lo confirme.
-      isPaid: paymentMethod == PaymentMethod.online,
-      amount: raffle.ticketPrice * numbers.length,
-    );
+    final newTicketData = {
+      'raffleId': raffle.id,
+      'userId': user.uid,
+      'userName': userName,
+      'ticketNumbers': numbers,
+      'paymentMethod': paymentMethod.name, // 'online' o 'manual'
+      'isPaid': paymentMethod == PaymentMethod.online,
+      'amount': raffle.ticketPrice * numbers.length,
+      'purchaseDate': FieldValue.serverTimestamp(),
+    };
 
-    // Creamos el documento en la subcolección de la rifa
+    // --- ESTA ES LA LÍNEA CLAVE ---
+    // En lugar de actualizar un array en el documento principal,
+    // añadimos un NUEVO DOCUMENTO a la SUBCOLECCIÓN 'tickets'.
     await _firestore
         .collection('raffles')
         .doc(raffle.id)
         .collection('tickets')
-        .add({ // No usamos un .toMap() aquí para poder añadir la fecha del servidor
-      'raffleId': newTicket.raffleId,
-      'userId': newTicket.userId,
-      'userName': newTicket.userName,
-      'ticketNumbers': newTicket.ticketNumbers,
-      'paymentMethod': newTicket.paymentMethod.name,
-      'isPaid': newTicket.isPaid,
-      'amount': newTicket.amount,
-      'purchaseDate': FieldValue.serverTimestamp(), // Usa la hora del servidor
-    });
+        .add(newTicketData);
   }
 }

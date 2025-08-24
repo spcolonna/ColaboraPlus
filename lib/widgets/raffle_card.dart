@@ -31,9 +31,6 @@ class RaffleCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. ELIMINAMOS EL CONTENEDOR DE LA IMAGEN
-
-              // Título de la Rifa
               Text(
                 raffle.title,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
