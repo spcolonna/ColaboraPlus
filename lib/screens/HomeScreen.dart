@@ -1,4 +1,5 @@
 import 'package:colabora_plus/screens/tabs/active_raffles_tab.dart';
+import 'package:colabora_plus/screens/tabs/my_participations_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:colabora_plus/models/UserModel.dart';
 import 'package:colabora_plus/theme/AppColors.dart';
@@ -61,10 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> _buildPages() {
     return [
       const ActiveRafflesTab(),
-      const PlaceholderTab(
-        title: 'Mis Participaciones',
-        message: 'Aquí verás una lista de las rifas en las que has comprado números.',
-      ),
+      const MyParticipationsTab(),
       const PlaceholderTab(
         title: 'Historial de Rifas',
         message: 'Aquí verás una lista de todas las rifas pasadas y sus ganadores.',

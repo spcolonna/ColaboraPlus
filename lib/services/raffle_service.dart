@@ -4,6 +4,7 @@ import '../enums/payment_method.dart';
 import '../enums/payment_method.dart';
 import '../models/prize_model.dart';
 import '../models/raffle_model.dart';
+import '../models/raffle_participation.dart';
 import '../models/ticket_model.dart';
 
 class RaffleService {
@@ -134,5 +135,60 @@ class RaffleService {
         .doc(raffle.id)
         .collection('tickets')
         .add(newTicketData);
+  }
+
+  Future<List<RaffleParticipation>> getMyParticipations() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      // Si no hay usuario, devuelve una lista vacía.
+      return [];
+    }
+
+    // 1. Hacemos una consulta de grupo para encontrar TODOS los boletos del usuario
+    final ticketsSnapshot = await _firestore
+        .collectionGroup('tickets') // <-- Magia de Collection Group Query
+        .where('userId', isEqualTo: user.uid)
+        .get();
+
+    if (ticketsSnapshot.docs.isEmpty) {
+      return []; // El usuario no ha comprado ningún boleto.
+    }
+
+    // 2. Agrupamos los boletos por 'raffleId' y coleccionamos los números
+    final Map<String, List<int>> numbersByRaffleId = {};
+    for (var ticketDoc in ticketsSnapshot.docs) {
+      final ticketData = ticketDoc.data();
+      final raffleId = ticketData['raffleId'] as String;
+      final numbers = List<int>.from(ticketData['ticketNumbers'] ?? []);
+
+      if (numbersByRaffleId.containsKey(raffleId)) {
+        numbersByRaffleId[raffleId]!.addAll(numbers);
+      } else {
+        numbersByRaffleId[raffleId] = numbers;
+      }
+    }
+
+    // 3. Obtenemos los IDs únicos de las rifas en las que participa
+    final raffleIds = numbersByRaffleId.keys.toList();
+
+    // 4. Hacemos UNA SOLA consulta para traer los detalles de todas esas rifas
+    final rafflesSnapshot = await _firestore
+        .collection('raffles')
+        .where(FieldPath.documentId, whereIn: raffleIds)
+        .get();
+
+    // 5. Unimos los detalles de la rifa con los números del usuario
+    final List<RaffleParticipation> participations = [];
+    for (var raffleDoc in rafflesSnapshot.docs) {
+      final raffle = RaffleModel.fromFirestore(raffleDoc);
+      final userNumbers = numbersByRaffleId[raffle.id] ?? [];
+      userNumbers.sort(); // Ordenamos los números
+
+      participations.add(
+        RaffleParticipation(raffle: raffle, userNumbers: userNumbers),
+      );
+    }
+
+    return participations;
   }
 }
