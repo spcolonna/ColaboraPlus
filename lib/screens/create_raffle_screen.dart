@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:colabora_plus/services/raffle_service.dart';
 import 'package:colabora_plus/theme/AppColors.dart';
+import 'package:intl/intl.dart';
 
 import '../models/prize_model.dart';
 
@@ -20,22 +21,38 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
   final _priceController = TextEditingController();
   DateTime? _selectedDate;
 
-  // Lista para manejar los controllers de los premios
-  List<TextEditingController> _prizeControllers = [TextEditingController()];
+  final List<TextEditingController> _prizeControllers = [TextEditingController()];
 
   bool _isLoading = false;
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+  Future<void> _selectDateTime(BuildContext context) async {
+    // 1. Muestra el selector de fecha
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime(2101),
     );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
+
+    if (pickedDate != null && mounted) {
+      // 2. Si se eligió una fecha, muestra el selector de hora
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(_selectedDate ?? DateTime.now()),
+      );
+
+      if (pickedTime != null) {
+        // 3. Combina la fecha y la hora en un solo objeto DateTime
+        setState(() {
+          _selectedDate = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+      }
     }
   }
 
@@ -129,10 +146,10 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
               // Selector de fecha
               ListTile(
                 title: Text(_selectedDate == null
-                    ? 'Seleccionar fecha del sorteo'
-                    : 'Fecha del Sorteo: ${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'),
+                    ? 'Seleccionar fecha y hora del sorteo'
+                    : 'Fecha del Sorteo: ${DateFormat('dd/MM/yyyy HH:mm').format(_selectedDate!)} hs'),
                 trailing: const Icon(Icons.calendar_today),
-                onTap: () => _selectDate(context),
+                onTap: () => _selectDateTime(context),
               ),
               const Divider(height: 32),
               // Sección de premios

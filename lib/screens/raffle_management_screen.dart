@@ -87,16 +87,31 @@ class _RaffleManagementScreenState extends State<RaffleManagementScreen> {
     setState(() => _isEditing = false);
   }
 
-  // --- LÓGICA DE UI ---
-  Future<void> _selectDate() async {
-    final DateTime? picked = await showDatePicker(
+  Future<void> _selectDateTime() async {
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: _editedDrawDate,
       firstDate: DateTime.now(),
       lastDate: DateTime(2101),
     );
-    if (picked != null && picked != _editedDrawDate) {
-      setState(() => _editedDrawDate = picked);
+
+    if (pickedDate != null && mounted) {
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(_editedDrawDate),
+      );
+
+      if (pickedTime != null) {
+        setState(() {
+          _editedDrawDate = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+      }
     }
   }
 
@@ -187,9 +202,14 @@ class _RaffleManagementScreenState extends State<RaffleManagementScreen> {
             subtitle: Text("\$${widget.raffle.ticketPrice.toStringAsFixed(2)}",
                 style: const TextStyle(fontSize: 16))),
         ListTile(
-            title: const Text("Fecha del Sorteo"),
-            subtitle: Text(DateFormat('dd/MM/yyyy').format(widget.raffle.drawDate),
-                style: const TextStyle(fontSize: 16))),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+              side: BorderSide(color: Colors.grey)),
+          title: Text(
+              'Fecha del Sorteo: ${DateFormat('dd/MM/yyyy HH:mm').format(_editedDrawDate)} hs'),
+          trailing: const Icon(Icons.calendar_today),
+          onTap: _selectDateTime,
+        ),
         const Divider(),
         const Padding(
           padding: EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
@@ -228,7 +248,7 @@ class _RaffleManagementScreenState extends State<RaffleManagementScreen> {
           title: Text(
               'Fecha del Sorteo: ${DateFormat('dd/MM/yyyy').format(_editedDrawDate)}'),
           trailing: const Icon(Icons.calendar_today),
-          onTap: _selectDate,
+          onTap: _selectDateTime,
         ),
         const Divider(height: 32),
         Text("Premios", style: Theme.of(context).textTheme.titleMedium),

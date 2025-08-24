@@ -83,7 +83,10 @@ class _MyParticipationsTabState extends State<MyParticipationsTab> {
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
-                        Text('Sorteo: ${DateFormat('dd/MM/yyyy').format(raffle.drawDate)}', style: const TextStyle(color: Colors.grey)),
+                        Text(
+                            'Sorteo: ${DateFormat('dd/MM/yyyy HH:mm').format(raffle.drawDate)} hs',
+                            style: const TextStyle(color: Colors.grey)
+                        ),
                         const Divider(height: 24),
                         const Text('Tus números:', style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),

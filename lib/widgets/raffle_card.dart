@@ -51,7 +51,6 @@ class RaffleCard extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Información de Precio y Fecha (datos reales)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -67,7 +66,7 @@ class RaffleCard extends StatelessWidget {
                     backgroundColor: AppColors.primaryBlue.withOpacity(0.1),
                     avatar: Icon(Icons.calendar_today, color: AppColors.primaryBlue),
                     label: Text(
-                      DateFormat('dd/MM/yyyy').format(raffle.drawDate),
+                      DateFormat('dd/MM/yyyy HH:mm').format(raffle.drawDate),
                       style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold),
                     ),
                   ),
