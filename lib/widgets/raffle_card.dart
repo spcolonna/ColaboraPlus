@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:colabora_plus/theme/AppColors.dart';
 
 import '../models/raffle_model.dart';
+import '../screens/raffle_detail_screen.dart';
 
 class RaffleCard extends StatelessWidget {
   final RaffleModel raffle;
@@ -17,7 +18,12 @@ class RaffleCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: InkWell(
         onTap: () {
-          // TODO: Navegar a la pantalla de detalle de la rifa (vista pública)
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RaffleDetailScreen(raffle: raffle),
+            ),
+          );
         },
         borderRadius: BorderRadius.circular(15),
         child: Padding(
