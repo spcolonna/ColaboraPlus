@@ -1,4 +1,5 @@
 import 'package:colabora_plus/screens/tabs/active_raffles_tab.dart';
+import 'package:colabora_plus/screens/tabs/history_tab.dart';
 import 'package:colabora_plus/screens/tabs/my_participations_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:colabora_plus/models/UserModel.dart';
@@ -63,10 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return [
       const ActiveRafflesTab(),
       const MyParticipationsTab(),
-      const PlaceholderTab(
-        title: 'Historial de Rifas',
-        message: 'Aquí verás una lista de todas las rifas pasadas y sus ganadores.',
-      ),
+      const HistoryTab(),
       _isLoadingProfile
           ? const Center(child: CircularProgressIndicator())
           : _userProfile != null

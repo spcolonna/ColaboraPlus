@@ -84,11 +84,10 @@ class RaffleService {
   }
 
   Stream<QuerySnapshot> getAllActiveRafflesStream() {
-    // Más adelante podríamos añadir un .where('status', isEqualTo: 'active')
-    // para filtrar solo las que no han sido sorteadas.
     return _firestore
         .collection('raffles')
-        .orderBy('drawDate', descending: false) // Muestra primero las más próximas a sortearse
+        .where('status', isEqualTo: 'active')
+        .orderBy('drawDate', descending: false)
         .snapshots();
   }
 
@@ -183,6 +182,56 @@ class RaffleService {
       final raffle = RaffleModel.fromFirestore(raffleDoc);
       final userNumbers = numbersByRaffleId[raffle.id] ?? [];
       userNumbers.sort(); // Ordenamos los números
+
+      participations.add(
+        RaffleParticipation(raffle: raffle, userNumbers: userNumbers),
+      );
+    }
+
+    return participations;
+  }
+
+  Future<List<RaffleParticipation>> getMyFinishedParticipations() async {
+    final user = _auth.currentUser;
+    if (user == null) return [];
+
+    // 1. Buscamos todos los boletos del usuario (igual que antes)
+    final ticketsSnapshot = await _firestore
+        .collectionGroup('tickets')
+        .where('userId', isEqualTo: user.uid)
+        .get();
+
+    if (ticketsSnapshot.docs.isEmpty) return [];
+
+    final Map<String, List<int>> numbersByRaffleId = {};
+    for (var ticketDoc in ticketsSnapshot.docs) {
+      final ticketData = ticketDoc.data();
+      final raffleId = ticketData['raffleId'] as String;
+      final numbers = List<int>.from(ticketData['ticketNumbers'] ?? []);
+
+      if (numbersByRaffleId.containsKey(raffleId)) {
+        numbersByRaffleId[raffleId]!.addAll(numbers);
+      } else {
+        numbersByRaffleId[raffleId] = numbers;
+      }
+    }
+
+    final raffleIds = numbersByRaffleId.keys.toList();
+
+    // 2. LA CLAVE: Hacemos la consulta a las rifas, pero filtrando
+    //    solo aquellas cuyo status sea "finished".
+    final rafflesSnapshot = await _firestore
+        .collection('raffles')
+        .where(FieldPath.documentId, whereIn: raffleIds)
+        .where('status', isEqualTo: 'finished') // <-- EL NUEVO FILTRO
+        .get();
+
+    // 3. Unimos los datos (igual que antes)
+    final List<RaffleParticipation> participations = [];
+    for (var raffleDoc in rafflesSnapshot.docs) {
+      final raffle = RaffleModel.fromFirestore(raffleDoc);
+      final userNumbers = numbersByRaffleId[raffle.id] ?? [];
+      userNumbers.sort();
 
       participations.add(
         RaffleParticipation(raffle: raffle, userNumbers: userNumbers),
