@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:colabora_plus/services/raffle_service.dart';
@@ -29,9 +30,10 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
   String _numberSearchQuery = '';
   int _visibleNumberLimit = 10;
 
-  // --- ESTADO PARA CAMPOS PERSONALIZADOS ---
   final _formKey = GlobalKey<FormState>();
   late Map<String, TextEditingController> _customDataControllers;
+  bool _isAdmin = false;
+  final _adminNotesController = TextEditingController();
 
   @override
   void initState() {
@@ -48,6 +50,11 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
     _customDataControllers = {
       for (var field in widget.raffle.customFields) field: TextEditingController()
     };
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null && currentUser.uid == widget.raffle.creatorId) {
+      _isAdmin = true;
+    }
   }
 
   @override
@@ -56,6 +63,7 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
     for (var controller in _customDataControllers.values) {
       controller.dispose();
     }
+    _adminNotesController.dispose();
     super.dispose();
   }
 
@@ -81,6 +89,7 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
         numbers: _selectedNumbers,
         paymentMethod: _paymentMethod,
         customData: customData,
+        adminNotes: _isAdmin ? _adminNotesController.text.trim() : null,
       );
 
       if (mounted) {
@@ -230,6 +239,7 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
                   Text("¡Participa Ahora!",
                       style: Theme.of(context).textTheme.headlineSmall),
                   const SizedBox(height: 16),
+                  if (_isAdmin) _buildAdminNotesField(),
                   widget.raffle.isLimited
                       ? _buildLimitedRaffleUI()
                       : _buildOpenRaffleUI(),
@@ -256,6 +266,39 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
   }
 
   // --- WIDGETS DE UI ---
+  Widget _buildAdminNotesField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primaryBlue,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+              "MODO ADMINISTRADOR",
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _adminNotesController,
+            decoration: const InputDecoration(
+              labelText: 'Nota de Reserva (Ej: "Para Juan Pérez")',
+              hintText: 'Esta nota solo es visible para ti',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.note_alt_outlined),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+        ],
+      ),
+    );
+  }
 
   Widget _buildRaffleInfo() {
     return Column(

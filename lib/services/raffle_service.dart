@@ -117,6 +117,7 @@ class RaffleService {
     required List<int> numbers,
     required PaymentMethod paymentMethod,
     required Map<String, String> customData,
+    String? adminNotes
   }) async {
     final user = _auth.currentUser;
     final userName = user?.displayName ?? user?.email ?? 'Usuario Anónimo';
@@ -135,6 +136,7 @@ class RaffleService {
       'amount': raffle.ticketPrice * numbers.length,
       'purchaseDate': FieldValue.serverTimestamp(),
       'customData': customData,
+      'adminNotes': adminNotes,
     };
 
     await _firestore
@@ -147,7 +149,6 @@ class RaffleService {
   Future<List<RaffleParticipation>> getMyParticipations() async {
     final user = _auth.currentUser;
     if (user == null) {
-      // Si no hay usuario, devuelve una lista vacía.
       return [];
     }
 

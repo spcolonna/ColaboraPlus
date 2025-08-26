@@ -12,6 +12,7 @@ class TicketModel {
   final bool isPaid;
   final double amount;
   final Map<String, String> customData;
+  final String? adminNotes;
 
   TicketModel({
     required this.id,
@@ -23,6 +24,7 @@ class TicketModel {
     required this.isPaid,
     required this.amount,
     this.customData = const {},
+    this.adminNotes,
   });
 
   factory TicketModel.fromFirestore(DocumentSnapshot doc) {
@@ -32,7 +34,6 @@ class TicketModel {
       raffleId: data['raffleId'] ?? '',
       userId: data['userId'] ?? '',
       userName: data['userName'] ?? 'Usuario Anónimo',
-      // Firestore guarda las listas como List<dynamic>, hay que convertirla
       ticketNumbers: List<int>.from(data['ticketNumbers'] ?? []),
       paymentMethod: PaymentMethod.values.firstWhere(
             (e) => e.name == data['paymentMethod'],
@@ -41,6 +42,7 @@ class TicketModel {
       isPaid: data['isPaid'] ?? false,
       amount: (data['amount'] as num?)?.toDouble() ?? 0.0,
       customData: Map<String, String>.from(data['customData'] ?? {}),
+      adminNotes: data['adminNotes'],
     );
   }
 }
