@@ -22,6 +22,12 @@ class _HistoryTabState extends State<HistoryTab> {
     _historyFuture = _raffleService.getMyFinishedParticipations();
   }
 
+  void _refreshHistory() {
+    setState(() {
+      _historyFuture = _raffleService.getMyFinishedParticipations();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,6 +35,12 @@ class _HistoryTabState extends State<HistoryTab> {
         title: const Text('Historial de Rifas'),
         backgroundColor: AppColors.primaryBlue,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshHistory,
+          ),
+        ],
       ),
       body: FutureBuilder<List<RaffleParticipation>>(
         future: _historyFuture,

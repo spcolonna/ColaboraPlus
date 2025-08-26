@@ -24,6 +24,12 @@ class _MyParticipationsTabState extends State<MyParticipationsTab> {
     _participationsFuture = _raffleService.getMyParticipations();
   }
 
+  void _refreshParticipations() {
+    setState(() {
+      _participationsFuture = _raffleService.getMyParticipations();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,6 +37,12 @@ class _MyParticipationsTabState extends State<MyParticipationsTab> {
         title: const Text('Mis Participaciones'),
         backgroundColor: AppColors.primaryBlue,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshParticipations,
+          ),
+        ],
       ),
       body: FutureBuilder<List<RaffleParticipation>>(
         future: _participationsFuture,

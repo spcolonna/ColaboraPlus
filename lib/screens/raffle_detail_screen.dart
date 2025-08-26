@@ -7,7 +7,9 @@ import 'package:colabora_plus/theme/AppColors.dart';
 import 'package:intl/intl.dart';
 
 import '../enums/payment_method.dart';
+import '../enums/raffle_status.dart';
 import '../models/raffle_model.dart';
+import '../widgets/winners_podium.dart';
 
 class RaffleDetailScreen extends StatefulWidget {
   final RaffleModel raffle;
@@ -221,47 +223,57 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
         ));
   }
 
-  // --- BUILD METHOD PRINCIPAL ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.raffle.title)),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildRaffleInfo(),
-                  const Divider(height: 32),
-                  Text("¡Participa Ahora!",
-                      style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 16),
-                  if (_isAdmin) _buildAdminNotesField(),
-                  widget.raffle.isLimited
-                      ? _buildLimitedRaffleUI()
-                      : _buildOpenRaffleUI(),
-                  const Divider(height: 32),
-                  _buildCustomFieldsForm(),
-                  _buildPaymentMethodSelector(),
-                  if (_errorText != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16.0),
-                      child: Text(_errorText!,
-                          style: const TextStyle(color: Colors.red)),
-                    ),
-                ],
-              ),
+      body: widget.raffle.status == RaffleStatus.finished
+          ? _buildFinishedView()
+          : _buildActiveView(),
+    );
+  }
+
+  Widget _buildActiveView() {
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildRaffleInfo(),
+                const Divider(height: 32),
+                Text("¡Participa Ahora!", style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 16),
+                if (_isAdmin) _buildAdminNotesField(),
+                widget.raffle.isLimited
+                    ? _buildLimitedRaffleUI()
+                    : _buildOpenRaffleUI(),
+                const Divider(height: 32),
+                _buildCustomFieldsForm(),
+                _buildPaymentMethodSelector(),
+                if (_errorText != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: Text(_errorText!, style: const TextStyle(color: Colors.red)),
+                  ),
+              ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: _buildBuyButton(),
-          ),
-        ],
-      ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: _buildBuyButton(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFinishedView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(8.0),
+      child: WinnersPodium(winners: widget.raffle.winners),
     );
   }
 

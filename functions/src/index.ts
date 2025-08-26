@@ -130,7 +130,7 @@ export const performDraws = onSchedule("every 5 minutes", async (_event) => {
             const userData = userDoc.data();
             // Priorizamos el nombre del perfil, si no existe, usamos el email
             winnerName = userData?.name || userData?.email || "Usuario Anónimo";
-            winnerEmail = userData?.email ?? "No disponible";
+            winnerEmail = userData?.email || userData?.mail || "No disponible";
             winnerPhoneNumber = userData?.phoneNumber ?? "No disponible";
           }
         } catch (userError) {
