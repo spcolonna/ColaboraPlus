@@ -14,6 +14,8 @@ class RaffleModel {
   final int soldTicketsCount;
   final RaffleStatus status;
   final List<WinnerModel> winners;
+  final bool isLimited;
+  final int? totalTickets;
 
   RaffleModel({
     required this.id,
@@ -24,7 +26,9 @@ class RaffleModel {
     required this.prizes,
     this.soldTicketsCount = 0,
     this.status = RaffleStatus.active,
-    this.winners = const []
+    this.winners = const [],
+    this.isLimited = false,
+    this.totalTickets,
   });
 
   factory RaffleModel.fromFirestore(DocumentSnapshot doc) {
@@ -58,6 +62,8 @@ class RaffleModel {
           orElse: () => RaffleStatus.active
       ),
       winners: winnersList,
+      isLimited: data['isLimited'] ?? false,
+      totalTickets: data['totalTickets'],
     );
   }
 
@@ -71,6 +77,8 @@ class RaffleModel {
       'soldTicketsCount': soldTicketsCount,
       'status': status.name,
       'winners': winners.map((winner) => winner.toMap()).toList(),
+      'isLimited': isLimited,
+      'totalTickets': totalTickets,
     };
   }
 }

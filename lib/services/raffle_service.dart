@@ -16,6 +16,8 @@ class RaffleService {
     required double ticketPrice,
     required DateTime drawDate,
     required List<PrizeModel> prizes,
+    required bool isLimited,
+    int? totalTickets,
   }) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -29,6 +31,8 @@ class RaffleService {
       drawDate: drawDate,
       ticketPrice: ticketPrice,
       prizes: prizes,
+      isLimited: isLimited,
+      totalTickets: totalTickets,
     );
 
     await _firestore.collection('raffles').add(newRaffle.toMap());
@@ -239,5 +243,25 @@ class RaffleService {
     }
 
     return participations;
+  }
+
+  Future<Set<int>> getSoldTicketNumbers(String raffleId) async {
+    final ticketsSnapshot = await _firestore
+        .collection('raffles')
+        .doc(raffleId)
+        .collection('tickets')
+        .get();
+
+    if (ticketsSnapshot.docs.isEmpty) {
+      return {};
+    }
+
+    final soldNumbers = <int>{};
+    for (var ticketDoc in ticketsSnapshot.docs) {
+      final numbers = List<int>.from(ticketDoc.data()['ticketNumbers'] ?? []);
+      soldNumbers.addAll(numbers);
+    }
+
+    return soldNumbers;
   }
 }

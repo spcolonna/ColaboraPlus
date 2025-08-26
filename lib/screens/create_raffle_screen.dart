@@ -20,6 +20,8 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
   final _titleController = TextEditingController();
   final _priceController = TextEditingController();
   DateTime? _selectedDate;
+  bool _isLimited = false;
+  final _totalTicketsController = TextEditingController();
 
   final List<TextEditingController> _prizeControllers = [TextEditingController()];
 
@@ -85,6 +87,8 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
           ticketPrice: double.tryParse(_priceController.text) ?? 0.0,
           drawDate: _selectedDate!,
           prizes: prizes,
+          isLimited: _isLimited,
+          totalTickets: _isLimited ? int.tryParse(_totalTicketsController.text) : null,
         );
 
         if (mounted) {
@@ -112,6 +116,7 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
     for (var controller in _prizeControllers) {
       controller.dispose();
     }
+    _totalTicketsController.dispose();
     super.dispose();
   }
 
@@ -135,6 +140,33 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
                 decoration: const InputDecoration(labelText: 'Título de la Rifa'),
                 validator: (value) => value!.isEmpty ? 'El título no puede estar vacío' : null,
               ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Rifa con boletos limitados'),
+                subtitle: const Text('Ej: 100 boletos del 0 al 99'),
+                value: _isLimited,
+                onChanged: (bool value) {
+                  setState(() {
+                    _isLimited = value;
+                  });
+                },
+              ),
+
+              if (_isLimited) // Este campo solo aparece si el switch está activado
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: TextFormField(
+                    controller: _totalTicketsController,
+                    decoration: const InputDecoration(labelText: 'Cantidad total de boletos'),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (_isLimited && (value == null || value.isEmpty)) {
+                        return 'La cantidad es requerida para rifas limitadas';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _priceController,
