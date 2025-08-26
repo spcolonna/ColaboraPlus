@@ -41,26 +41,27 @@ class WinnersPodium extends StatelessWidget {
                 itemCount: sortedWinners.length,
                 itemBuilder: (context, index) {
                   final winner = sortedWinners[index];
+
+                  // Creamos una lista de widgets para los datos personalizados
+                  final customDataWidgets = winner.customData.entries.map((entry) {
+                    return Text('  • ${entry.key}: ${entry.value}');
+                  }).toList();
+
                   return ListTile(
                     leading: CircleAvatar(
-                      child: Text(
-                        '${winner.prizePosition}º',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                      child: Text('${winner.prizePosition}º', style: const TextStyle(fontWeight: FontWeight.bold)),
                     ),
-                    title: Text(
-                      winner.prizeDescription,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    // Subtítulo mejorado con toda la información
+                    title: Text(winner.prizeDescription, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 4),
                         Text('Ganador: ${winner.winnerName}'),
                         Text('Boleto Nº: ${winner.winningNumber}'),
-                        const SizedBox(height: 4),
-                        // Mostramos email y teléfono
+                        const SizedBox(height: 8),
+
+                        // --- INFORMACIÓN DE CONTACTO ---
+                        const Text('Datos de Contacto:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                         Row(children: [
                           const Icon(Icons.email, size: 14, color: Colors.grey),
                           const SizedBox(width: 4),
@@ -71,9 +72,22 @@ class WinnersPodium extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(winner.winnerPhoneNumber),
                         ]),
+
+                        // --- DATOS PERSONALIZADOS (SI EXISTEN) ---
+                        if (customDataWidgets.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          const Text('Información Adicional:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                          ...customDataWidgets,
+                        ],
+
+                        // --- NOTAS DEL ADMIN (SI EXISTEN) ---
+                        if (winner.adminNotes != null && winner.adminNotes!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          const Text('Nota de Reserva (Admin):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                          Text('  • ${winner.adminNotes}'),
+                        ],
                       ],
                     ),
-                    isThreeLine: true, // Permite más espacio para el subtítulo
                   );
                 },
                 separatorBuilder: (context, index) => const Divider(),
