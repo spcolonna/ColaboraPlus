@@ -5,6 +5,7 @@ import 'package:colabora_plus/theme/AppColors.dart';
 import '../../models/raffle_model.dart';
 import '../../services/raffle_service.dart';
 import '../raffle_management_screen.dart';
+import '../terms_screen.dart';
 
 class ProfileTab extends StatefulWidget {
   final UserModel user;
@@ -73,6 +74,22 @@ class _ProfileTabState extends State<ProfileTab> {
             // --- SECCIÓN DEL FORMULARIO DE PERFIL ---
             _buildProfileFormCard(),
             const SizedBox(height: 24),
+
+            // AÑADIMOS EL ENLACE A TÉRMINOS Y CONDICIONES
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.description_outlined),
+                title: const Text('Términos y Condiciones'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TermsScreen()),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // --- SEPARADOR Y LISTA DE RIFAS ---
             const Divider(thickness: 1),
