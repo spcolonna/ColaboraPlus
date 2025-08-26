@@ -5,9 +5,11 @@ import 'package:colabora_plus/theme/AppColors.dart';
 import 'package:intl/intl.dart';
 
 import '../enums/payment_method.dart';
+import '../enums/raffle_status.dart';
 import '../models/prize_model.dart';
 import '../models/raffle_model.dart';
-import '../models/ticket_model.dart'; // Asegúrate de tener el paquete 'intl' en tu pubspec.yaml
+import '../models/ticket_model.dart';
+import '../widgets/winners_podium.dart'; // Asegúrate de tener el paquete 'intl' en tu pubspec.yaml
 
 class RaffleManagementScreen extends StatefulWidget {
   final RaffleModel raffle;
@@ -129,21 +131,50 @@ class _RaffleManagementScreenState extends State<RaffleManagementScreen> {
   // --- BUILD METHOD PRINCIPAL ---
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.raffle.title),
+        backgroundColor: AppColors.primaryBlue,
+        foregroundColor: Colors.white,
+      ),
+      // El cuerpo de la pantalla ahora depende del estado de la rifa
+      body: widget.raffle.status == RaffleStatus.finished
+          ? _buildFinishedRaffleView() // <-- Muestra los ganadores si ya terminó
+          : _buildActiveRaffleView(),   // <-- Muestra las pestañas si está activa
+    );
+  }
+
+  // --- NUEVO: Widget para la vista de una rifa finalizada ---
+  Widget _buildFinishedRaffleView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        children: [
+          // Reutilizamos la tarjeta de total recaudado
+          _buildTotalRaisedCard(),
+          const SizedBox(height: 16),
+          // Mostramos nuestro nuevo podio de ganadores
+          WinnersPodium(winners: widget.raffle.winners),
+        ],
+      ),
+    );
+  }
+
+  // --- NUEVO: Widget para la vista de una rifa activa (tu código anterior) ---
+  Widget _buildActiveRaffleView() {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        // Usamos un AppBar sin color para que no se vea doble
         appBar: AppBar(
-          title: Text(widget.raffle.title),
-          backgroundColor: AppColors.primaryBlue,
-          foregroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          toolbarHeight: 0, // La hacemos invisible
           bottom: const TabBar(
             tabs: [
               Tab(icon: Icon(Icons.dashboard), text: 'Resumen'),
               Tab(icon: Icon(Icons.people), text: 'Participantes'),
             ],
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            indicatorColor: AppColors.accentGreen,
           ),
         ),
         body: TabBarView(

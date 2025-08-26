@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:colabora_plus/models/prize_model.dart';
+import 'package:colabora_plus/models/winner_model.dart';
+
+import '../enums/raffle_status.dart';
 
 class RaffleModel {
   final String id;
@@ -9,6 +12,8 @@ class RaffleModel {
   final double ticketPrice;
   final List<PrizeModel> prizes;
   final int soldTicketsCount;
+  final RaffleStatus status;
+  final List<WinnerModel> winners;
 
   RaffleModel({
     required this.id,
@@ -18,6 +23,8 @@ class RaffleModel {
     required this.ticketPrice,
     required this.prizes,
     this.soldTicketsCount = 0,
+    this.status = RaffleStatus.active,
+    this.winners = const []
   });
 
   factory RaffleModel.fromFirestore(DocumentSnapshot doc) {
@@ -31,6 +38,13 @@ class RaffleModel {
           .toList();
     }
 
+    List<WinnerModel> winnersList = [];
+    if (data['winners'] is List) {
+      winnersList = (data['winners'] as List)
+          .map((winnerData) => WinnerModel.fromMap(winnerData))
+          .toList();
+    }
+
     return RaffleModel(
       id: doc.id,
       title: data['title'] ?? 'Sin Título',
@@ -39,6 +53,11 @@ class RaffleModel {
       ticketPrice: (data['ticketPrice'] as num?)?.toDouble() ?? 0.0,
       prizes: prizesList,
       soldTicketsCount: data['soldTicketsCount'] ?? 0,
+      status: RaffleStatus.values.firstWhere(
+              (e) => e.name == data['status'],
+          orElse: () => RaffleStatus.active
+      ),
+      winners: winnersList,
     );
   }
 
@@ -50,6 +69,8 @@ class RaffleModel {
       'ticketPrice': ticketPrice,
       'prizes': prizes.map((prize) => prize.toMap()).toList(),
       'soldTicketsCount': soldTicketsCount,
+      'status': status.name,
+      'winners': winners.map((winner) => winner.toMap()).toList(),
     };
   }
 }
