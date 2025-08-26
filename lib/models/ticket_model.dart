@@ -6,11 +6,12 @@ class TicketModel {
   final String id;
   final String raffleId;
   final String userId;
-  final String userName; // Guardamos el nombre para no tener que buscarlo después
-  final List<int> ticketNumbers; // Los números que compró en esta transacción
+  final String userName;
+  final List<int> ticketNumbers;
   final PaymentMethod paymentMethod;
-  final bool isPaid; // False por defecto para pagos manuales
-  final double amount; // Cuánto costó esta compra
+  final bool isPaid;
+  final double amount;
+  final Map<String, String> customData;
 
   TicketModel({
     required this.id,
@@ -21,6 +22,7 @@ class TicketModel {
     required this.paymentMethod,
     required this.isPaid,
     required this.amount,
+    this.customData = const {},
   });
 
   factory TicketModel.fromFirestore(DocumentSnapshot doc) {
@@ -38,6 +40,7 @@ class TicketModel {
       ),
       isPaid: data['isPaid'] ?? false,
       amount: (data['amount'] as num?)?.toDouble() ?? 0.0,
+      customData: Map<String, String>.from(data['customData'] ?? {}),
     );
   }
 }

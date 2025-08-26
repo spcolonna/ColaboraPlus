@@ -16,6 +16,7 @@ class RaffleModel {
   final List<WinnerModel> winners;
   final bool isLimited;
   final int? totalTickets;
+  final List<String> customFields;
 
   RaffleModel({
     required this.id,
@@ -29,6 +30,7 @@ class RaffleModel {
     this.winners = const [],
     this.isLimited = false,
     this.totalTickets,
+    this.customFields = const [],
   });
 
   factory RaffleModel.fromFirestore(DocumentSnapshot doc) {
@@ -64,6 +66,7 @@ class RaffleModel {
       winners: winnersList,
       isLimited: data['isLimited'] ?? false,
       totalTickets: data['totalTickets'],
+      customFields: List<String>.from(data['customFields'] ?? []),
     );
   }
 
@@ -79,6 +82,7 @@ class RaffleModel {
       'winners': winners.map((winner) => winner.toMap()).toList(),
       'isLimited': isLimited,
       'totalTickets': totalTickets,
+      'customFields': customFields,
     };
   }
 }

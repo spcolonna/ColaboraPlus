@@ -1,11 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../enums/payment_method.dart';
-import '../enums/payment_method.dart';
 import '../models/prize_model.dart';
 import '../models/raffle_model.dart';
 import '../models/raffle_participation.dart';
-import '../models/ticket_model.dart';
 
 class RaffleService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -18,6 +16,7 @@ class RaffleService {
     required List<PrizeModel> prizes,
     required bool isLimited,
     int? totalTickets,
+    required List<String> customFields,
   }) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -33,6 +32,7 @@ class RaffleService {
       prizes: prizes,
       isLimited: isLimited,
       totalTickets: totalTickets,
+      customFields: customFields,
     );
 
     await _firestore.collection('raffles').add(newRaffle.toMap());
@@ -75,8 +75,10 @@ class RaffleService {
     required double newTicketPrice,
     required DateTime newDrawDate,
     required List<PrizeModel> newPrizes,
+    required bool isLimited,
+    int? totalTickets,
+    required List<String> customFields,
   }) async {
-    // Convertimos la lista de premios a una lista de mapas
     final prizesAsMaps = newPrizes.map((prize) => prize.toMap()).toList();
 
     await _firestore.collection('raffles').doc(raffleId).update({
@@ -84,6 +86,9 @@ class RaffleService {
       'ticketPrice': newTicketPrice,
       'drawDate': Timestamp.fromDate(newDrawDate),
       'prizes': prizesAsMaps,
+      'isLimited': isLimited,
+      'totalTickets': totalTickets,
+      'customFields': customFields,
     });
   }
 
@@ -111,6 +116,7 @@ class RaffleService {
     required RaffleModel raffle,
     required List<int> numbers,
     required PaymentMethod paymentMethod,
+    required Map<String, String> customData,
   }) async {
     final user = _auth.currentUser;
     final userName = user?.displayName ?? user?.email ?? 'Usuario Anónimo';
@@ -128,11 +134,9 @@ class RaffleService {
       'isPaid': paymentMethod == PaymentMethod.online,
       'amount': raffle.ticketPrice * numbers.length,
       'purchaseDate': FieldValue.serverTimestamp(),
+      'customData': customData,
     };
 
-    // --- ESTA ES LA LÍNEA CLAVE ---
-    // En lugar de actualizar un array en el documento principal,
-    // añadimos un NUEVO DOCUMENTO a la SUBCOLECCIÓN 'tickets'.
     await _firestore
         .collection('raffles')
         .doc(raffle.id)

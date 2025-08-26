@@ -1,8 +1,8 @@
 import 'dart:math';
-import 'package:colabora_plus/services/raffle_service.dart';
-import 'package:colabora_plus/theme/AppColors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:colabora_plus/services/raffle_service.dart';
+import 'package:colabora_plus/theme/AppColors.dart';
 import 'package:intl/intl.dart';
 
 import '../enums/payment_method.dart';
@@ -19,21 +19,24 @@ class RaffleDetailScreen extends StatefulWidget {
 class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
   final _raffleService = RaffleService();
 
-  // --- ESTADO GENERAL ---
   final List<int> _selectedNumbers = [];
   PaymentMethod _paymentMethod = PaymentMethod.online;
   bool _isLoading = false;
   String? _errorText;
 
-  // --- ESTADO PARA RIFAS LIMITADAS ---
   Future<Set<int>>? _soldNumbersFuture;
   final _numberSearchController = TextEditingController();
   String _numberSearchQuery = '';
   int _visibleNumberLimit = 10;
 
+  // --- ESTADO PARA CAMPOS PERSONALIZADOS ---
+  final _formKey = GlobalKey<FormState>();
+  late Map<String, TextEditingController> _customDataControllers;
+
   @override
   void initState() {
     super.initState();
+    // Lógica para rifas limitadas
     if (widget.raffle.isLimited) {
       _soldNumbersFuture =
           _raffleService.getSoldTicketNumbers(widget.raffle.id);
@@ -41,31 +44,43 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
         setState(() => _numberSearchQuery = _numberSearchController.text);
       });
     }
+    // Lógica para campos personalizados
+    _customDataControllers = {
+      for (var field in widget.raffle.customFields) field: TextEditingController()
+    };
   }
 
   @override
   void dispose() {
     _numberSearchController.dispose();
+    for (var controller in _customDataControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
-  // --- LÓGICA DE COMPRA (COMÚN A AMBOS TIPOS DE RIFA) ---
+  // --- LÓGICA DE COMPRA ---
   Future<void> _buyTickets() async {
     if (_selectedNumbers.isEmpty) {
       setState(() => _errorText = "Debes añadir al menos un número.");
       return;
     }
+    if (_formKey.currentState != null && !_formKey.currentState!.validate()) {
+      return;
+    }
 
-    setState(() {
-      _isLoading = true;
-      _errorText = null;
-    });
+    setState(() { _isLoading = true; _errorText = null; });
 
     try {
+      final customData = _customDataControllers.map(
+            (key, controller) => MapEntry(key, controller.text.trim()),
+      );
+
       await _raffleService.purchaseTicket(
         raffle: widget.raffle,
         numbers: _selectedNumbers,
         paymentMethod: _paymentMethod,
+        customData: customData,
       );
 
       if (mounted) {
@@ -219,6 +234,7 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
                       ? _buildLimitedRaffleUI()
                       : _buildOpenRaffleUI(),
                   const Divider(height: 32),
+                  _buildCustomFieldsForm(),
                   _buildPaymentMethodSelector(),
                   if (_errorText != null)
                     Padding(
@@ -373,7 +389,7 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
                   child: TextButton(
                     onPressed: () =>
                         setState(() => _visibleNumberLimit += 10),
-                    child: const Text("Ver más..."),
+                    child: const Text("Ver 10 más..."),
                   ),
                 ),
               ),
@@ -445,6 +461,32 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
               .toList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildCustomFieldsForm() {
+    if (widget.raffle.customFields.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Información Adicional Requerida:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
+          ...widget.raffle.customFields.map((field) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: TextFormField(
+              controller: _customDataControllers[field],
+              decoration: InputDecoration(labelText: field, border: const OutlineInputBorder()),
+              validator: (value) => value!.isEmpty ? 'Este campo es requerido' : null,
+            ),
+          )).toList(),
+          const Divider(height: 32),
+        ],
+      ),
     );
   }
 

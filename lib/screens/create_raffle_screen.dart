@@ -16,19 +16,38 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
   final _formKey = GlobalKey<FormState>();
   final _raffleService = RaffleService();
 
-  // Controllers para los campos principales
+  // Controllers principales
   final _titleController = TextEditingController();
   final _priceController = TextEditingController();
   DateTime? _selectedDate;
+
+  // Controllers para Premios
+  List<TextEditingController> _prizeControllers = [TextEditingController()];
+
+  // Controllers para Rifa Limitada
   bool _isLimited = false;
   final _totalTicketsController = TextEditingController();
 
-  final List<TextEditingController> _prizeControllers = [TextEditingController()];
+  // --- NUEVO: Controllers para Campos Personalizados ---
+  List<TextEditingController> _customFieldControllers = [];
 
   bool _isLoading = false;
 
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _priceController.dispose();
+    _totalTicketsController.dispose();
+    for (var controller in _prizeControllers) {
+      controller.dispose();
+    }
+    for (var controller in _customFieldControllers) { // <-- No olvides el dispose
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
   Future<void> _selectDateTime(BuildContext context) async {
-    // 1. Muestra el selector de fecha
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? DateTime.now(),
@@ -37,21 +56,16 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
     );
 
     if (pickedDate != null && mounted) {
-      // 2. Si se eligió una fecha, muestra el selector de hora
       final TimeOfDay? pickedTime = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(_selectedDate ?? DateTime.now()),
       );
 
       if (pickedTime != null) {
-        // 3. Combina la fecha y la hora en un solo objeto DateTime
         setState(() {
           _selectedDate = DateTime(
-            pickedDate.year,
-            pickedDate.month,
-            pickedDate.day,
-            pickedTime.hour,
-            pickedTime.minute,
+            pickedDate.year, pickedDate.month, pickedDate.day,
+            pickedTime.hour, pickedTime.minute,
           );
         });
       }
@@ -59,9 +73,7 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
   }
 
   void _addPrizeField() {
-    setState(() {
-      _prizeControllers.add(TextEditingController());
-    });
+    setState(() => _prizeControllers.add(TextEditingController()));
   }
 
   void _removePrizeField(int index) {
@@ -71,15 +83,32 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
     });
   }
 
+  // --- NUEVOS MÉTODOS PARA CAMPOS PERSONALIZADOS ---
+  void _addCustomField() {
+    setState(() => _customFieldControllers.add(TextEditingController()));
+  }
+
+  void _removeCustomField(int index) {
+    setState(() {
+      _customFieldControllers[index].dispose();
+      _customFieldControllers.removeAt(index);
+    });
+  }
+
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
       try {
         final prizes = _prizeControllers
-            .asMap()
-            .entries
+            .asMap().entries
             .map((entry) => PrizeModel(position: entry.key + 1, description: entry.value.text))
+            .toList();
+
+        // --- RECOLECTAMOS LOS NOMBRES DE LOS CAMPOS PERSONALIZADOS ---
+        final customFields = _customFieldControllers
+            .map((controller) => controller.text.trim())
+            .where((field) => field.isNotEmpty) // Ignoramos campos vacíos
             .toList();
 
         await _raffleService.createRaffle(
@@ -89,13 +118,14 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
           prizes: prizes,
           isLimited: _isLimited,
           totalTickets: _isLimited ? int.tryParse(_totalTicketsController.text) : null,
+          customFields: customFields, // <-- AHORA SÍ ENVIAMOS EL PARÁMETRO
         );
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('¡Rifa creada con éxito!')),
           );
-          Navigator.of(context).pop(); // Volver a la pantalla anterior
+          Navigator.of(context).pop();
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -107,17 +137,6 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
         }
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _priceController.dispose();
-    for (var controller in _prizeControllers) {
-      controller.dispose();
-    }
-    _totalTicketsController.dispose();
-    super.dispose();
   }
 
   @override
@@ -135,38 +154,12 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // --- Campos existentes ---
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Título de la Rifa'),
                 validator: (value) => value!.isEmpty ? 'El título no puede estar vacío' : null,
               ),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                title: const Text('Rifa con boletos limitados'),
-                subtitle: const Text('Ej: 100 boletos del 0 al 99'),
-                value: _isLimited,
-                onChanged: (bool value) {
-                  setState(() {
-                    _isLimited = value;
-                  });
-                },
-              ),
-
-              if (_isLimited) // Este campo solo aparece si el switch está activado
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: TextFormField(
-                    controller: _totalTicketsController,
-                    decoration: const InputDecoration(labelText: 'Cantidad total de boletos'),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (_isLimited && (value == null || value.isEmpty)) {
-                        return 'La cantidad es requerida para rifas limitadas';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _priceController,
@@ -175,7 +168,23 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
                 validator: (value) => value!.isEmpty ? 'El precio es requerido' : null,
               ),
               const SizedBox(height: 16),
-              // Selector de fecha
+              SwitchListTile(
+                title: const Text('Rifa con boletos limitados'),
+                subtitle: const Text('Ej: 100 boletos del 0 al 99'),
+                value: _isLimited,
+                onChanged: (bool value) => setState(() => _isLimited = value),
+              ),
+              if (_isLimited)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: TextFormField(
+                    controller: _totalTicketsController,
+                    decoration: const InputDecoration(labelText: 'Cantidad total de boletos'),
+                    keyboardType: TextInputType.number,
+                    validator: (value) => (_isLimited && (value == null || value.isEmpty)) ? 'La cantidad es requerida' : null,
+                  ),
+                ),
+              const SizedBox(height: 16),
               ListTile(
                 title: Text(_selectedDate == null
                     ? 'Seleccionar fecha y hora del sorteo'
@@ -184,7 +193,8 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
                 onTap: () => _selectDateTime(context),
               ),
               const Divider(height: 32),
-              // Sección de premios
+
+              // --- Sección de Premios (sin cambios) ---
               Text('Premios', style: Theme.of(context).textTheme.titleLarge),
               ..._buildPrizeFields(),
               TextButton.icon(
@@ -192,8 +202,21 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
                 label: const Text('Añadir Premio'),
                 onPressed: _addPrizeField,
               ),
+
+              // --- NUEVA SECCIÓN PARA CAMPOS PERSONALIZADOS ---
+              const Divider(height: 32),
+              Text('Información Adicional a Solicitar', style: Theme.of(context).textTheme.titleLarge),
+              const Text('Ej: "Nº de Documento", "Vendido por:", etc. Déjalo en blanco si no necesitas campos extra.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              const SizedBox(height: 8),
+              ..._buildCustomFields(),
+              TextButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Añadir Campo'),
+                onPressed: _addCustomField,
+              ),
+              // --- FIN DE LA NUEVA SECCIÓN ---
+
               const SizedBox(height: 32),
-              // Botón de Crear
               if (_isLoading)
                 const Center(child: CircularProgressIndicator())
               else
@@ -233,6 +256,27 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
                 : null,
           ),
           validator: (value) => value!.isEmpty ? 'La descripción es requerida' : null,
+        ),
+      );
+    }).toList();
+  }
+
+  // --- NUEVO WIDGET HELPER ---
+  List<Widget> _buildCustomFields() {
+    return _customFieldControllers.asMap().entries.map((entry) {
+      int index = entry.key;
+      TextEditingController controller = entry.value;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: 'Nombre del campo ${index + 1}',
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+              onPressed: () => _removeCustomField(index),
+            ),
+          ),
         ),
       );
     }).toList();
