@@ -2,17 +2,21 @@ import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import {onCall, HttpsError} from "firebase-functions/v2/https";
+import axios from "axios";
+import {SecretManagerServiceClient} from "@google-cloud/secret-manager";
 
 admin.initializeApp();
 const db = admin.firestore();
 
-// --- Definición de Tipo para los Premios (para corregir el error de 'any') ---
 interface Prize {
     position: number;
     description: string;
 }
 
-// --- Función 1: Actualizar contador de boletos (SIN CAMBIOS) ---
+/**
+ * Función 1: Actualizar contador de boletos
+ */
 export const onTicketWrite = onDocumentWritten(
   "raffles/{raffleId}/tickets/{ticketId}",
   (event) => {
@@ -28,6 +32,12 @@ export const onTicketWrite = onDocumentWritten(
     const dataBefore = change.before.data();
     const dataAfter = change.after.data();
 
+    logger.debug("Ticket change detected", {
+      raffleId,
+      before: dataBefore,
+      after: dataAfter,
+    });
+
     const wasPaidBefore = dataBefore?.isPaid === true;
     const isPaidAfter = dataAfter?.isPaid === true;
 
@@ -41,7 +51,16 @@ export const onTicketWrite = onDocumentWritten(
       incrementValue = -ticketsBefore;
     }
 
+    logger.debug("Increment calculation", {
+      wasPaidBefore,
+      isPaidAfter,
+      ticketsBefore,
+      ticketsAfter,
+      incrementValue,
+    });
+
     if (incrementValue === 0) {
+      logger.debug("No change in sold tickets count. Exiting.");
       return;
     }
 
@@ -53,8 +72,9 @@ export const onTicketWrite = onDocumentWritten(
   },
 );
 
-
-// --- Función 2: Realizar Sorteos Programados (CORREGIDA) ---
+/**
+ * Función 2: Realizar Sorteos Programados
+ */
 export const performDraws = onSchedule("every 5 minutes", async (_event) => {
   const now = admin.firestore.Timestamp.now();
   logger.log("Running scheduled draw function at:", now.toDate());
@@ -74,6 +94,7 @@ export const performDraws = onSchedule("every 5 minutes", async (_event) => {
     const raffleId = raffleDoc.id;
     const raffleData = raffleDoc.data();
     logger.log(`Processing draw for raffle: ${raffleId}`);
+    logger.debug("Raffle data", raffleData);
 
     try {
       await raffleDoc.ref.update({status: "processing"});
@@ -90,7 +111,6 @@ export const performDraws = onSchedule("every 5 minutes", async (_event) => {
       const numberPool: number[] = [];
       const numberOwners: {[key: number]: {
                     userId: string,
-                    // Guardamos los datos extra del boleto
                     customData: {[key: string]: string},
                     adminNotes: string | null,
                 }} = {};
@@ -108,6 +128,8 @@ export const performDraws = onSchedule("every 5 minutes", async (_event) => {
         }
       });
 
+      logger.debug("Number pool generated", {count: numberPool.length});
+
       const winners = [];
       const prizes: Prize[] = [...raffleData.prizes]
         .sort((a: Prize, b: Prize) => a.position - b.position);
@@ -118,43 +140,50 @@ export const performDraws = onSchedule("every 5 minutes", async (_event) => {
         const winningNumber = numberPool.splice(randomIndex, 1)[0];
         const winnerTicketInfo = numberOwners[winningNumber];
 
-        // --- LÓGICA MEJORADA AQUÍ ---
+        logger.debug("Prize assignment", {
+          prize,
+          winningNumber,
+          winnerTicketInfo,
+        });
+
         let winnerName = "Usuario Anónimo";
         let winnerEmail = "No disponible";
         let winnerPhoneNumber = "No disponible";
 
         try {
-          const userDoc =
-              await db.collection("users").doc(winnerTicketInfo.userId).get();
+          const userDoc = await db.collection("users")
+            .doc(winnerTicketInfo.userId).get();
           if (userDoc.exists) {
             const userData = userDoc.data();
-            // Priorizamos el nombre del perfil, si no existe, usamos el email
-            winnerName = userData?.name || userData?.email || "Usuario Anónimo";
-            winnerEmail = userData?.email || userData?.mail || "No disponible";
+            winnerName = userData?.name || "Usuario Anónimo";
+            winnerEmail = userData?.email ||
+                            userData?.mail || "No disponible";
             winnerPhoneNumber = userData?.phoneNumber ?? "No disponible";
           }
         } catch (userError) {
-          logger.error(`Could not fetch user profile for 
-          ${winnerTicketInfo.userId}`);
+          logger.error(
+            `Could not fetch user profile for ${winnerTicketInfo.userId}`,
+          );
         }
 
-        // 2. Guardamos toda la información en el objeto del ganador
         winners.push({
           prizePosition: prize.position,
           prizeDescription: prize.description,
-          winningNumber: winningNumber,
+          winningNumber,
           winnerUserId: winnerTicketInfo.userId,
-          winnerName: winnerName, // <-- Ahora es el nombre real
-          winnerEmail: winnerEmail, // <-- Ahora es el email real
-          winnerPhoneNumber: winnerPhoneNumber, // <-- Teléfono
-          adminNotes: winnerTicketInfo.adminNotes, // <-- Nota del admin
-          customData: winnerTicketInfo.customData, // <-- Datos personalizados
+          winnerName,
+          winnerEmail,
+          winnerPhoneNumber,
+          adminNotes: winnerTicketInfo.adminNotes,
+          customData: winnerTicketInfo.customData,
         });
       }
 
+      logger.debug("Winners generated", winners);
+
       return raffleDoc.ref.update({
         status: "finished",
-        winners: winners,
+        winners,
       });
     } catch (error) {
       logger.error(`Failed to process draw for raffle ${raffleId}:`, error);
@@ -165,3 +194,79 @@ export const performDraws = onSchedule("every 5 minutes", async (_event) => {
   await Promise.all(drawPromises);
   logger.log(`Finished processing ${dueRaffles.size} draws.`);
 });
+
+/**
+ * Función 3: Crear preferencia de pago en MercadoPago
+ */
+export const createPaymentPreference = onCall(async (request) => {
+  // YA NO USAMOS {secrets: [...]}
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Debes iniciar sesión.");
+  }
+
+  const {raffleId, raffleTitle, quantity, unitPrice} = request.data;
+  if (!raffleId || !raffleTitle || !quantity || !unitPrice) {
+    throw new HttpsError("invalid-argument", "Faltan datos para el pago.");
+  }
+
+  // --- NUEVA LÓGICA PARA LEER EL SECRETO EN TIEMPO DE EJECUCIÓN ---
+  let accessToken = "";
+  try {
+    const client = new SecretManagerServiceClient();
+    const name = "projects/736305070285/secrets/MERCADOPAGO_ACCESS_TOKEN/versions/latest";
+
+    const [version] = await client.accessSecretVersion({name: name});
+    accessToken = version.payload?.data?.toString() ?? "";
+    if (!accessToken) {
+      throw new Error("El valor del secreto está vacío.");
+    }
+  } catch (error) {
+    logger.error("Error al acceder al secreto de MercadoPago:", error);
+    throw new HttpsError("internal", "No se pudo configurar el pago.");
+  }
+
+  const preference = {
+    items: [
+      {
+        id: raffleId,
+        title: `Boleto(s) para: ${raffleTitle}`,
+        description: `Compra de ${quantity} boleto(s).`,
+        quantity,
+        currency_id: "UYU",
+        unit_price: unitPrice,
+      },
+    ],
+    back_urls: {
+      success: "https://colaboraplus.com/success",
+      failure: "https://colaboraplus.com/failure",
+      pending: "https://colaboraplus.com/pending",
+    },
+    auto_return: "approved",
+  };
+
+  logger.debug("Preference payload", preference);
+
+  try {
+    const response = await axios.post(
+      "https://api.mercadopago.com/checkout/preferences",
+      preference,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
+      },
+    );
+
+    const preferenceId = response.data.id;
+    logger.info("Preferencia creada:", preferenceId);
+    return {preferenceId};
+  } catch (error: any) {
+    logger.error(
+      "Error al crear la preferencia de pago:",
+      error.response?.data || error.message,
+    );
+    throw new HttpsError("internal", "No se pudo crear el link de pago.");
+  }
+},
+);
