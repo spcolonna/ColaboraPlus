@@ -350,8 +350,15 @@ class _RaffleManagementScreenState extends State<RaffleManagementScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: _raffleService.getTicketsStream(widget.raffle.id),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const Center(child: Text("Aún no hay participantes."));
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return const Center(child: Text("Error al cargar participantes."));
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text("Aún no hay participantes."));
+        }
 
         Map<String, List<TicketModel>> userTickets = {};
         for (var doc in snapshot.data!.docs) {
@@ -368,12 +375,12 @@ class _RaffleManagementScreenState extends State<RaffleManagementScreen> {
           children: userTickets.entries.map((entry) {
             final userAllTickets = entry.value;
             final firstTicket = userAllTickets.first;
+
             final allNumbers = userAllTickets.expand((t) => t.ticketNumbers).toList()..sort();
-            final pendingManualTicket = userAllTickets.firstWhere(
-                  (t) => t.paymentMethod == PaymentMethod.manual && !t.isPaid,
-              orElse: () => TicketModel(id: '', raffleId: '', userId: '', userName: '', ticketNumbers: [], paymentMethod: PaymentMethod.online, isPaid: true, amount: 0, customData: {}),
-            );
-            final hasPendingPayment = pendingManualTicket.id.isNotEmpty;
+
+            final pendingManualTickets = userAllTickets
+                .where((t) => t.paymentMethod == PaymentMethod.manual && !t.isPaid)
+                .toList();
 
             return Card(
               child: ExpansionTile(
@@ -390,18 +397,57 @@ class _RaffleManagementScreenState extends State<RaffleManagementScreen> {
                           spacing: 8.0, runSpacing: 4.0,
                           children: allNumbers.map((num) => Chip(label: Text(num.toString()))).toList(),
                         ),
-                        if (hasPendingPayment) ...[
+
+                        // --- LÓGICA MEJORADA PARA PAGOS PENDIENTES ---
+                        if (pendingManualTickets.isNotEmpty) ...[
                           const Divider(height: 24),
-                          CheckboxListTile(
-                            title: const Text("Confirmar Pago Manual"),
-                            subtitle: Text("Monto: \$${pendingManualTicket.amount.toStringAsFixed(2)}"),
-                            value: false,
-                            onChanged: (bool? value) {
-                              if (value == true) {
-                                _raffleService.confirmManualPayment(widget.raffle.id, pendingManualTicket.id);
-                              }
-                            },
-                          )
+                          const Text("Pagos Manuales Pendientes:", style: TextStyle(fontWeight: FontWeight.bold)),
+                          ...pendingManualTickets.map((ticket) {
+                            return ListTile(
+                              title: Text("Compra de ${ticket.ticketNumbers.length} boleto(s)"),
+                              subtitle: Text("Monto: \$${ticket.amount.toStringAsFixed(2)}"),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Botón para Liberar/Eliminar
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                    tooltip: 'Liberar números',
+                                    onPressed: () {
+                                      // Mostramos un diálogo de confirmación
+                                      showDialog(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text('¿Liberar Números?'),
+                                          content: Text('¿Estás seguro de que quieres eliminar esta compra pendiente? Los números ${ticket.ticketNumbers.join(', ')} volverán a estar disponibles.'),
+                                          actions: [
+                                            TextButton(
+                                              child: const Text('Cancelar'),
+                                              onPressed: () => Navigator.of(ctx).pop(),
+                                            ),
+                                            TextButton(
+                                              child: const Text('Sí, Liberar', style: TextStyle(color: Colors.red)),
+                                              onPressed: () {
+                                                _raffleService.deleteTicket(widget.raffle.id, ticket.id);
+                                                Navigator.of(ctx).pop();
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  // Botón para Confirmar
+                                  ElevatedButton(
+                                    child: const Text('Confirmar'),
+                                    onPressed: () {
+                                      _raffleService.confirmManualPayment(widget.raffle.id, ticket.id);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                         ]
                       ],
                     ),

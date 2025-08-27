@@ -269,4 +269,13 @@ class RaffleService {
 
     return soldNumbers;
   }
+
+  Future<void> deleteTicket(String raffleId, String ticketId) async {
+    await _firestore
+        .collection('raffles')
+        .doc(raffleId)
+        .collection('tickets')
+        .doc(ticketId)
+        .delete();
+  }
 }
