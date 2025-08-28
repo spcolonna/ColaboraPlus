@@ -17,6 +17,8 @@ class RaffleService {
     required bool isLimited,
     int? totalTickets,
     required List<String> customFields,
+    required String country,
+    required String countryCode,
   }) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -33,6 +35,8 @@ class RaffleService {
       isLimited: isLimited,
       totalTickets: totalTickets,
       customFields: customFields,
+      country: country,
+      countryCode: countryCode,
     );
 
     await _firestore.collection('raffles').add(newRaffle.toMap());

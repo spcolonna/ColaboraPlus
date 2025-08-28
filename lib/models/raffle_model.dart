@@ -17,6 +17,10 @@ class RaffleModel {
   final bool isLimited;
   final int? totalTickets;
   final List<String> customFields;
+  final String country;
+  final String countryCode;
+
+  bool get hasEnded => DateTime.now().isAfter(drawDate);
 
   RaffleModel({
     required this.id,
@@ -31,6 +35,8 @@ class RaffleModel {
     this.isLimited = false,
     this.totalTickets,
     this.customFields = const [],
+    required this.country,
+    required this.countryCode,
   });
 
   factory RaffleModel.fromFirestore(DocumentSnapshot doc) {
@@ -67,6 +73,8 @@ class RaffleModel {
       isLimited: data['isLimited'] ?? false,
       totalTickets: data['totalTickets'],
       customFields: List<String>.from(data['customFields'] ?? []),
+      country: data['country'] ?? 'Uruguay',
+      countryCode: data['countryCode'] ?? 'UY',
     );
   }
 
@@ -83,6 +91,8 @@ class RaffleModel {
       'isLimited': isLimited,
       'totalTickets': totalTickets,
       'customFields': customFields,
+      'country': country,
+      'countryCode': countryCode,
     };
   }
 }

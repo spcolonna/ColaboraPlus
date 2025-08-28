@@ -405,6 +405,19 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
           title: Text(
               "Precio por Boleto: \$${widget.raffle.ticketPrice.toStringAsFixed(2)}"),
         ),
+        const SizedBox(height: 8),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(Icons.public, color: Colors.grey[700]),
+          title: Text(
+            "Rifa válida en: ${widget.raffle.country}",
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: const Text(
+            "El premio solo podrá ser reclamado en este territorio.",
+            style: TextStyle(fontSize: 12),
+          ),
+        ),
       ],
     );
   }

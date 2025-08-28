@@ -15,21 +15,17 @@ class CreateRaffleScreen extends StatefulWidget {
 class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
   final _formKey = GlobalKey<FormState>();
   final _raffleService = RaffleService();
-
-  // Controllers principales
   final _titleController = TextEditingController();
   final _priceController = TextEditingController();
   DateTime? _selectedDate;
-
-  // Controllers para Premios
   List<TextEditingController> _prizeControllers = [TextEditingController()];
-
-  // Controllers para Rifa Limitada
   bool _isLimited = false;
   final _totalTicketsController = TextEditingController();
-
-  // --- NUEVO: Controllers para Campos Personalizados ---
   List<TextEditingController> _customFieldControllers = [];
+
+  // --- Variables de estado para el país (ya las tenías, ¡perfecto!) ---
+  String _selectedCountry = 'Uruguay';
+  String _selectedCountryCode = 'UY';
 
   bool _isLoading = false;
 
@@ -41,7 +37,7 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
     for (var controller in _prizeControllers) {
       controller.dispose();
     }
-    for (var controller in _customFieldControllers) { // <-- No olvides el dispose
+    for (var controller in _customFieldControllers) {
       controller.dispose();
     }
     super.dispose();
@@ -83,7 +79,6 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
     });
   }
 
-  // --- NUEVOS MÉTODOS PARA CAMPOS PERSONALIZADOS ---
   void _addCustomField() {
     setState(() => _customFieldControllers.add(TextEditingController()));
   }
@@ -96,7 +91,7 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
   }
 
   Future<void> _submitForm() async {
-    if (_formKey.currentState!.validate()) {
+    if (_formKey.currentState!.validate() && _selectedDate != null) {
       setState(() => _isLoading = true);
 
       try {
@@ -105,10 +100,9 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
             .map((entry) => PrizeModel(position: entry.key + 1, description: entry.value.text))
             .toList();
 
-        // --- RECOLECTAMOS LOS NOMBRES DE LOS CAMPOS PERSONALIZADOS ---
         final customFields = _customFieldControllers
             .map((controller) => controller.text.trim())
-            .where((field) => field.isNotEmpty) // Ignoramos campos vacíos
+            .where((field) => field.isNotEmpty)
             .toList();
 
         await _raffleService.createRaffle(
@@ -118,7 +112,10 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
           prizes: prizes,
           isLimited: _isLimited,
           totalTickets: _isLimited ? int.tryParse(_totalTicketsController.text) : null,
-          customFields: customFields, // <-- AHORA SÍ ENVIAMOS EL PARÁMETRO
+          customFields: customFields,
+          // --- DATOS DEL PAÍS AÑADIDOS A LA LLAMADA ---
+          country: _selectedCountry,
+          countryCode: _selectedCountryCode,
         );
 
         if (mounted) {
@@ -136,6 +133,10 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
           setState(() => _isLoading = false);
         }
       }
+    } else if (_selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, selecciona una fecha para el sorteo.')),
+      );
     }
   }
 
@@ -154,7 +155,6 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Campos existentes ---
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Título de la Rifa'),
@@ -192,9 +192,34 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () => _selectDateTime(context),
               ),
-              const Divider(height: 32),
+              const SizedBox(height: 16),
 
-              // --- Sección de Premios (sin cambios) ---
+              // --- WIDGET DEL SELECTOR DE PAÍS AÑADIDO AQUÍ ---
+              DropdownButtonFormField<String>(
+                value: _selectedCountry,
+                decoration: const InputDecoration(
+                  labelText: 'País de la Rifa',
+                  border: OutlineInputBorder(),
+                ),
+                items: <String>['Uruguay', 'Argentina', 'Brasil']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(value: value, child: Text(value));
+                }).toList(),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedCountry = newValue;
+                      // Lógica simple para asignar el código
+                      if (newValue == 'Uruguay') _selectedCountryCode = 'UY';
+                      else if (newValue == 'Argentina') _selectedCountryCode = 'AR';
+                      else if (newValue == 'Brasil') _selectedCountryCode = 'BR';
+                    });
+                  }
+                },
+              ),
+              // --- FIN DEL WIDGET ---
+
+              const Divider(height: 32),
               Text('Premios', style: Theme.of(context).textTheme.titleLarge),
               ..._buildPrizeFields(),
               TextButton.icon(
@@ -202,11 +227,9 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
                 label: const Text('Añadir Premio'),
                 onPressed: _addPrizeField,
               ),
-
-              // --- NUEVA SECCIÓN PARA CAMPOS PERSONALIZADOS ---
               const Divider(height: 32),
               Text('Información Adicional a Solicitar', style: Theme.of(context).textTheme.titleLarge),
-              const Text('Ej: "Nº de Documento", "Vendido por:", etc. Déjalo en blanco si no necesitas campos extra.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              const Text('Ej: "Nº de Documento", etc. Déjalo en blanco si no necesitas campos extra.', style: TextStyle(color: Colors.grey, fontSize: 12)),
               const SizedBox(height: 8),
               ..._buildCustomFields(),
               TextButton.icon(
@@ -214,8 +237,6 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
                 label: const Text('Añadir Campo'),
                 onPressed: _addCustomField,
               ),
-              // --- FIN DE LA NUEVA SECCIÓN ---
-
               const SizedBox(height: 32),
               if (_isLoading)
                 const Center(child: CircularProgressIndicator())
@@ -261,7 +282,6 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
     }).toList();
   }
 
-  // --- NUEVO WIDGET HELPER ---
   List<Widget> _buildCustomFields() {
     return _customFieldControllers.asMap().entries.map((entry) {
       int index = entry.key;
