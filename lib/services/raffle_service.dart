@@ -19,6 +19,8 @@ class RaffleService {
     required List<String> customFields,
     required String country,
     required String countryCode,
+    required bool isPrivate,
+    String? rafflePassword,
   }) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -37,6 +39,8 @@ class RaffleService {
       customFields: customFields,
       country: country,
       countryCode: countryCode,
+      isPrivate: isPrivate,
+      rafflePassword: rafflePassword,
     );
 
     await _firestore.collection('raffles').add(newRaffle.toMap());

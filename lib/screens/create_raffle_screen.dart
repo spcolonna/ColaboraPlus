@@ -23,9 +23,10 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
   final _totalTicketsController = TextEditingController();
   List<TextEditingController> _customFieldControllers = [];
 
-  // --- Variables de estado para el país (ya las tenías, ¡perfecto!) ---
   String _selectedCountry = 'Uruguay';
   String _selectedCountryCode = 'UY';
+  bool _isPrivate = false;
+  final _passwordController = TextEditingController();
 
   bool _isLoading = false;
 
@@ -113,9 +114,10 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
           isLimited: _isLimited,
           totalTickets: _isLimited ? int.tryParse(_totalTicketsController.text) : null,
           customFields: customFields,
-          // --- DATOS DEL PAÍS AÑADIDOS A LA LLAMADA ---
           country: _selectedCountry,
           countryCode: _selectedCountryCode,
+          isPrivate: _isPrivate,
+          rafflePassword: _isPrivate ? _passwordController.text : null,
         );
 
         if (mounted) {
@@ -218,6 +220,23 @@ class _CreateRaffleScreenState extends State<CreateRaffleScreen> {
                 },
               ),
               // --- FIN DEL WIDGET ---
+
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Rifa Privada'),
+                subtitle: const Text('Se requerirá una clave para ver y participar.'),
+                value: _isPrivate,
+                onChanged: (bool value) => setState(() => _isPrivate = value),
+              ),
+              if (_isPrivate) // Solo aparece si la rifa es privada
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: TextFormField(
+                    controller: _passwordController,
+                    decoration: const InputDecoration(labelText: 'Clave de la Rifa'),
+                    validator: (value) => (_isPrivate && (value == null || value.isEmpty)) ? 'La clave es requerida' : null,
+                  ),
+                ),
 
               const Divider(height: 32),
               Text('Premios', style: Theme.of(context).textTheme.titleLarge),

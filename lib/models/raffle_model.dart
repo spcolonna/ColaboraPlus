@@ -19,6 +19,8 @@ class RaffleModel {
   final List<String> customFields;
   final String country;
   final String countryCode;
+  final bool isPrivate;
+  final String? rafflePassword;
 
   bool get hasEnded => DateTime.now().isAfter(drawDate);
 
@@ -37,6 +39,8 @@ class RaffleModel {
     this.customFields = const [],
     required this.country,
     required this.countryCode,
+    this.isPrivate = false,
+    this.rafflePassword,
   });
 
   factory RaffleModel.fromFirestore(DocumentSnapshot doc) {
@@ -75,6 +79,8 @@ class RaffleModel {
       customFields: List<String>.from(data['customFields'] ?? []),
       country: data['country'] ?? 'Uruguay',
       countryCode: data['countryCode'] ?? 'UY',
+      isPrivate: data['isPrivate'] ?? false,
+      rafflePassword: data['rafflePassword'],
     );
   }
 
@@ -93,6 +99,8 @@ class RaffleModel {
       'customFields': customFields,
       'country': country,
       'countryCode': countryCode,
+      'isPrivate': isPrivate,
+      'rafflePassword': rafflePassword,
     };
   }
 }
