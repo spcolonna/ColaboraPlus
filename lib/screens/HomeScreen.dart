@@ -11,6 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 // --- 1. IMPORTAMOS LA NUEVA PESTAÑA DE PERFIL ---
 import 'package:colabora_plus/screens/tabs/profile_tab.dart';
 
+import '../services/notification_service.dart';
 import 'create_raffle_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -29,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadUserData();
+    _initNotifications();
   }
 
   Future<void> _loadUserData() async {
@@ -58,6 +60,10 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (mounted) setState(() => _isLoadingProfile = false);
     }
+  }
+
+  void _initNotifications() async {
+    await NotificationService().initNotifications();
   }
 
   List<Widget> _buildPages() {
