@@ -224,8 +224,10 @@ export const createPaymentPreference = onCall(
       );
 
       const preferenceId = response.data.id;
-      logger.info("Preferencia creada con éxito:", preferenceId);
-      return {preferenceId: preferenceId};
+      const initPoint = response.data.sandbox_init_point;
+
+      logger.info("Preferencia creada:", preferenceId);
+      return {preferenceId: preferenceId, initPoint: initPoint};
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {
         logger.error("Error de MercadoPago:", error.response.data);
@@ -235,3 +237,67 @@ export const createPaymentPreference = onCall(
       throw new HttpsError("internal", "No se pudo crear el link de pago.");
     }
   });
+
+export const mercadoPagoWebhook = onCall(
+  {secrets: ["MERCADOPAGO_ACCESS_TOKEN"]},
+  async (request) => {
+    // El cuerpo de la notificación viene en request.data
+    const notification = request.data;
+    logger.info("Webhook de Mercado Pago recibido:", notification);
+
+    // Verificamos que sea una notificación de pago
+    if (notification?.type === "payment" && notification.data?.id) {
+      const paymentId = notification.data.id;
+      logger.info(`Procesando ID de pago: ${paymentId}`);
+
+      try {
+        const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+        if (!accessToken) {
+          throw new HttpsError("internal", "Access Token no configurado.");
+        }
+
+        // 1. Buscamos los detalles completos del pago en la API de Mercado Pago
+        //    para verificar que sea un pago real y aprobado.
+        const paymentResponse = await axios.get(
+          `https://api.mercadopago.com/v1/payments/${paymentId}`,
+          {headers: {"Authorization": `Bearer ${accessToken}`}},
+        );
+
+        const paymentData = paymentResponse.data;
+        const preferenceId = paymentData.preference_id;
+        const paymentStatus = paymentData.status;
+
+        logger.info(`Pago encontrado. PreferenceId: ${preferenceId}, Status: ${paymentStatus}`);
+
+        // 2. Si el pago está aprobado, buscamos el boleto en nuestra base de datos
+        if (paymentStatus === "approved") {
+          const ticketsQuery = await db.collectionGroup("tickets")
+            .where("paymentPreferenceId", "==", preferenceId)
+            .limit(1)
+            .get();
+
+          if (ticketsQuery.empty) {
+            logger.warn(`No se encontró ningún boleto para la preferencia de pago: ${preferenceId}`);
+            return {status: "error", message: "Boleto no encontrado."};
+          }
+
+          // 3. Actualizamos el estado del boleto a 'pagado'
+          const ticketDoc = ticketsQuery.docs[0];
+          await ticketDoc.ref.update({isPaid: true});
+
+          logger.info(`Boleto ${ticketDoc.id} marcado como pagado.`);
+          return {status: "success", message: "Boleto actualizado."};
+        } else {
+          logger.warn(`El pago ${paymentId} no está aprobado. Estado: ${paymentStatus}`);
+          return {status: "ignored", message: "Pago no aprobado."};
+        }
+      } catch (error) {
+        logger.error(`Error procesando el pago ${paymentId}:`, error);
+        throw new HttpsError("internal", "Error al procesar el webhook.");
+      }
+    }
+
+    // Si la notificación no es de pago, la ignoramos.
+    return {status: "ignored", message: "Notificación no relevante."};
+  },
+);

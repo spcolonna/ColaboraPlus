@@ -5,12 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:colabora_plus/services/raffle_service.dart';
 import 'package:colabora_plus/theme/AppColors.dart';
 import 'package:intl/intl.dart';
-
+import 'package:url_launcher/url_launcher.dart';
 import '../enums/payment_method.dart';
 import '../enums/raffle_status.dart';
 import '../models/raffle_model.dart';
 import '../services/remote_config_service.dart';
 import '../widgets/winners_podium.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class RaffleDetailScreen extends StatefulWidget {
   final RaffleModel raffle;
@@ -74,12 +75,14 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
 
   // --- LÓGICA DE COMPRA ---
   Future<void> _buyTickets() async {
+    // 1. Validamos que haya números seleccionados
     if (_selectedNumbers.isEmpty) {
       setState(() => _errorText = "Debes añadir al menos un número.");
       return;
     }
+    // 2. Si hay un formulario de campos personalizados, lo validamos también
     if (_formKey.currentState != null && !_formKey.currentState!.validate()) {
-      return;
+      return; // Detiene la ejecución si los campos no son válidos
     }
 
     setState(() { _isLoading = true; _errorText = null; });
@@ -89,27 +92,91 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
             (key, controller) => MapEntry(key, controller.text.trim()),
       );
 
-      await _raffleService.purchaseTicket(
-        raffle: widget.raffle,
-        numbers: _selectedNumbers,
-        paymentMethod: _paymentMethod,
-        customData: customData,
-        adminNotes: _isAdmin ? _adminNotesController.text.trim() : null,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  '¡Felicidades! Has comprado ${_selectedNumbers.length} boleto(s).')),
+      if (_paymentMethod == PaymentMethod.manual) {
+        await _raffleService.purchaseTicket(
+          raffle: widget.raffle,
+          numbers: _selectedNumbers,
+          paymentMethod: _paymentMethod,
+          customData: customData,
+          adminNotes: _isAdmin ? _adminNotesController.text.trim() : null,
+          paymentPreferenceId: null, // No hay ID de pago en este caso
         );
-        Navigator.of(context).pop();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Boleto reservado. Pendiente de confirmación.')),
+          );
+          Navigator.of(context).pop();
+        }
+      } else {
+        // --- Flujo de Pago Online ---
+        final currentUser = FirebaseAuth.instance.currentUser;
+
+        if (currentUser == null) {
+          print('DEBUG: currentUser es NULO justo antes de la llamada.');
+          throw Exception("Usuario es nulo. No se puede continuar.");
+        }
+
+        print('--- INICIO DEBUG DE AUTH ---');
+        print('currentUser.uid: ${currentUser.uid}');
+        print('currentUser.email: ${currentUser.email}');
+        print('currentUser.isAnonymous: ${currentUser.isAnonymous}');
+
+        print('Forzando actualización de token...');
+        try {
+          final idTokenResult = await currentUser.getIdTokenResult(true);
+          print('Token actualizado. Obtenido en: ${idTokenResult.authTime}');
+          print('Token (primeros 10 chars): ${idTokenResult.token?.substring(0, 10)}...');
+        } catch (e) {
+          print('ERROR al refrescar el token: $e');
+        }
+        print('--- FIN DEBUG DE AUTH ---');
+
+        final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+            .httpsCallable('createPaymentPreference');
+        final response = await callable.call<Map<String, dynamic>>({
+          'raffleId': widget.raffle.id,
+          'raffleTitle': widget.raffle.title,
+          'quantity': _selectedNumbers.length,
+          'unitPrice': widget.raffle.ticketPrice,
+        });
+
+        // 2. Extraemos los dos datos que nos devuelve la función
+        final String? preferenceId = response.data['preferenceId'];
+        final String? initPoint = response.data['initPoint'];
+
+        if (preferenceId == null || initPoint == null) {
+          throw Exception('La respuesta del servidor no fue válida.');
+        }
+
+        // 3. Creamos el boleto en nuestra DB como 'pendiente' pero con el ID de la preferencia
+        await _raffleService.purchaseTicket(
+          raffle: widget.raffle,
+          numbers: _selectedNumbers,
+          paymentMethod: _paymentMethod,
+          customData: customData, // Asumiendo que ya tienes esta variable
+          adminNotes: _isAdmin ? _adminNotesController.text.trim() : null,
+          paymentPreferenceId: preferenceId,
+        );
+
+        // 4. Abrimos la URL de pago (¡tu código, que es perfecto!)
+        final Uri url = Uri.parse(initPoint);
+        if (!await launchUrl(url, mode: LaunchMode.inAppWebView)) {
+          throw Exception('No se pudo abrir la URL de pago: $url');
+        }
+
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
       }
     } catch (e) {
       setState(() {
-        _errorText = "Error al comprar los boletos: ${e.toString()}";
-        _isLoading = false;
+        _errorText = "Error al iniciar el pago: ${e.toString()}";
       });
+    } finally {
+      if (mounted) {
+        setState(() { _isLoading = false; });
+      }
     }
   }
 

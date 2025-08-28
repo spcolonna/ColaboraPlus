@@ -117,7 +117,8 @@ class RaffleService {
     required List<int> numbers,
     required PaymentMethod paymentMethod,
     required Map<String, String> customData,
-    String? adminNotes
+    String? adminNotes,
+    String? paymentPreferenceId
   }) async {
     final user = _auth.currentUser;
     final userName = user?.displayName ?? user?.email ?? 'Usuario Anónimo';
@@ -137,6 +138,7 @@ class RaffleService {
       'purchaseDate': FieldValue.serverTimestamp(),
       'customData': customData,
       'adminNotes': adminNotes,
+      'paymentPreferenceId': paymentPreferenceId,
     };
 
     await _firestore

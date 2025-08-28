@@ -13,6 +13,7 @@ class TicketModel {
   final double amount;
   final Map<String, String> customData;
   final String? adminNotes;
+  final String? paymentPreferenceId;
 
   TicketModel({
     required this.id,
@@ -25,6 +26,7 @@ class TicketModel {
     required this.amount,
     this.customData = const {},
     this.adminNotes,
+    this.paymentPreferenceId,
   });
 
   factory TicketModel.fromFirestore(DocumentSnapshot doc) {
@@ -43,6 +45,7 @@ class TicketModel {
       amount: (data['amount'] as num?)?.toDouble() ?? 0.0,
       customData: Map<String, String>.from(data['customData'] ?? {}),
       adminNotes: data['adminNotes'],
+      paymentPreferenceId: data['paymentPreferenceId'],
     );
   }
 }
