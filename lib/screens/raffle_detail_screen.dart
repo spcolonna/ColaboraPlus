@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../enums/payment_method.dart';
 import '../enums/raffle_status.dart';
 import '../models/raffle_model.dart';
+import '../services/remote_config_service.dart';
 import '../widgets/winners_podium.dart';
 
 class RaffleDetailScreen extends StatefulWidget {
@@ -36,6 +37,8 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
   late Map<String, TextEditingController> _customDataControllers;
   bool _isAdmin = false;
   final _adminNotesController = TextEditingController();
+
+  final RemoteConfigService _remoteConfigService = RemoteConfigService.instance;
 
   @override
   void initState() {
@@ -550,12 +553,13 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text("Método de Pago:", style: TextStyle(fontWeight: FontWeight.bold)),
-        RadioListTile<PaymentMethod>(
-          title: const Text("Pago Online (MercadoPago/Stripe)"),
-          value: PaymentMethod.online,
-          groupValue: _paymentMethod,
-          onChanged: (value) => setState(() => _paymentMethod = value!),
-        ),
+        if (_remoteConfigService.onlinePaymentsEnabled)
+          RadioListTile<PaymentMethod>(
+            title: const Text("Pago Online (MercadoPago/Stripe)"),
+            value: PaymentMethod.online,
+            groupValue: _paymentMethod,
+            onChanged: (value) => setState(() => _paymentMethod = value!),
+          ),
         RadioListTile<PaymentMethod>(
           title: const Text("Pago en Persona"),
           subtitle: const Text("Requiere confirmación del administrador"),

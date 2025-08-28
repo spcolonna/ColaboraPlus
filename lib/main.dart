@@ -1,3 +1,4 @@
+import 'package:colabora_plus/services/remote_config_service.dart';
 import 'package:colabora_plus/theme/AppColors.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -10,6 +11,8 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  final remoteConfigService = await RemoteConfigService.getInstance();
+  await remoteConfigService.fetchAndActivate();
   runApp(const MyApp());
 }
 
