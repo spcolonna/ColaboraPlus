@@ -58,7 +58,7 @@ export const onTicketWrite = onDocumentWritten(
 
 
 // --- Función 2: Realizar Sorteos Programados (CORREGIDA) ---
-export const performDraws = onSchedule("every 5 minutes", async (_event) => {
+export const performDraws = onSchedule("every 5 minutes", async () => {
   const now = admin.firestore.Timestamp.now();
   logger.log("Running scheduled draw function at:", now.toDate());
 
@@ -87,13 +87,13 @@ export const performDraws = onSchedule("every 5 minutes", async (_event) => {
 
       if (ticketsSnapshot.empty) {
         logger.log(`Raffle ${raffleId} has no paid tickets. Finishing it.`);
-        return raffleDoc.ref.update({status: "finished"});
+        await raffleDoc.ref.update({status: "finished"});
+        return;
       }
 
       const numberPool: number[] = [];
       const numberOwners: {[key: number]: {
                     userId: string,
-                    // Guardamos los datos extra del boleto
                     customData: {[key: string]: string},
                     adminNotes: string | null,
                 }} = {};
@@ -111,7 +111,7 @@ export const performDraws = onSchedule("every 5 minutes", async (_event) => {
         }
       });
 
-      const winners = [];
+      const winners: any[] = [];
       const prizes: Prize[] = [...raffleData.prizes]
         .sort((a: Prize, b: Prize) => a.position - b.position);
 
@@ -121,54 +121,83 @@ export const performDraws = onSchedule("every 5 minutes", async (_event) => {
         const winningNumber = numberPool.splice(randomIndex, 1)[0];
         const winnerTicketInfo = numberOwners[winningNumber];
 
-        // --- LÓGICA MEJORADA AQUÍ ---
         let winnerName = "Usuario Anónimo";
         let winnerEmail = "No disponible";
         let winnerPhoneNumber = "No disponible";
-
         try {
-          const userDoc =
-                        await db.collection("users").doc(winnerTicketInfo.userId).get();
+          const userDoc = await db.collection("users").doc(winnerTicketInfo.userId).get();
           if (userDoc.exists) {
             const userData = userDoc.data();
-            // Priorizamos el nombre del perfil, si no existe, usamos el email
-            winnerName = userData?.name || userData?.email || "Usuario Anónimo";
-            winnerEmail = userData?.email ?? "No disponible";
+            winnerName = userData?.name || userData?.email || userData?.mail || "Usuario Anónimo";
             winnerEmail = userData?.email || userData?.mail || "No disponible";
             winnerPhoneNumber = userData?.phoneNumber ?? "No disponible";
           }
-        } catch (userError) {
-          logger.error(`Could not fetch user profile for 
-          ${winnerTicketInfo.userId}`);
+        } catch (e) {
+          logger.error(`Could not fetch user profile for ${winnerTicketInfo.userId}`, e);
         }
 
-        // 2. Guardamos toda la información en el objeto del ganador
         winners.push({
           prizePosition: prize.position,
           prizeDescription: prize.description,
           winningNumber: winningNumber,
           winnerUserId: winnerTicketInfo.userId,
-          winnerName: winnerName, // <-- Ahora es el nombre real
-          winnerEmail: winnerEmail, // <-- Ahora es el email real
-          winnerPhoneNumber: winnerPhoneNumber, // <-- Teléfono
-          adminNotes: winnerTicketInfo.adminNotes, // <-- Nota del admin
-          customData: winnerTicketInfo.customData, // <-- Datos personalizados
+          winnerName: winnerName,
+          winnerEmail: winnerEmail,
+          winnerPhoneNumber: winnerPhoneNumber,
+          adminNotes: winnerTicketInfo.adminNotes,
+          customData: winnerTicketInfo.customData,
         });
       }
 
-      return raffleDoc.ref.update({
+      await raffleDoc.ref.update({
         status: "finished",
         winners: winners,
       });
+      logger.log(`Raffle ${raffleId} finished and winners saved.`);
+
+      const notificationPromises = [];
+      const adminDoc = await db.collection("users").doc(raffleData.creatorId).get();
+      const adminTokens = adminDoc.data()?.fcmTokens?.filter((t: string) => t) || [];
+      if (adminTokens.length > 0) {
+        const message = {
+          notification: {
+            title: "¡Sorteo Finalizado!",
+            body: `Tu rifa "${raffleData.title}" ha finalizado. ¡Revisa los ganadores!`,
+          },
+          tokens: adminTokens,
+        };
+        notificationPromises.push(admin.messaging().sendEachForMulticast(message));
+      }
+
+      for (const winner of winners) {
+        const winnerDoc = await db.collection("users").doc(winner.winnerUserId).get();
+        const winnerTokens = winnerDoc.data()?.fcmTokens?.filter((t: string) => t) || [];
+        if (winnerTokens.length > 0) {
+          const message = {
+            notification: {
+              title: "🎉 ¡Felicidades, has ganado! 🎉",
+              body: `Ganaste en la rifa "${raffleData.title}": ${winner.prizeDescription}.`,
+            },
+            tokens: winnerTokens,
+          };
+          notificationPromises.push(admin.messaging().sendEachForMulticast(message));
+        }
+      }
+
+      await Promise.all(notificationPromises);
+      logger.log(`Notification send process completed for raffle ${raffleId}.`);
+      return;
     } catch (error) {
       logger.error(`Failed to process draw for raffle ${raffleId}:`, error);
-      return raffleDoc.ref.update({status: "error_drawing"});
+      await raffleDoc.ref.update({status: "error_drawing"});
+      return;
     }
   });
 
   await Promise.all(drawPromises);
   logger.log(`Finished processing ${dueRaffles.size} draws.`);
 });
+
 
 export const createPaymentPreference = onCall(
   {secrets: ["MERCADOPAGO_ACCESS_TOKEN"]},

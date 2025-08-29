@@ -56,6 +56,7 @@ class RaffleService {
     return _firestore
         .collection('raffles')
         .where('creatorId', isEqualTo: user.uid)
+        // .orderBy('drawDate', descending: false)
         .snapshots(); // La clave es .snapshots() para tiempo real
   }
 

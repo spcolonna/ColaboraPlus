@@ -1,3 +1,10 @@
+plugins {
+    id("com.android.application") version "8.7.3" apply false
+    id("dev.flutter.flutter-gradle-plugin") apply false
+    id("org.jetbrains.kotlin.android") apply false
+    id("com.google.gms.google-services") apply false
+}
+
 allprojects {
     repositories {
         google()
