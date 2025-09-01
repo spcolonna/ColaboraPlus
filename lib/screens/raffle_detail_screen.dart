@@ -25,7 +25,7 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
   final _raffleService = RaffleService();
 
   final List<int> _selectedNumbers = [];
-  PaymentMethod _paymentMethod = PaymentMethod.online;
+  PaymentMethod _paymentMethod = PaymentMethod.manual;
   bool _isLoading = false;
   String? _errorText;
 
@@ -629,17 +629,32 @@ class _RaffleDetailScreenState extends State<RaffleDetailScreen> {
   }
 
   Widget _buildPaymentMethodSelector() {
+    bool onlinePaymentsActive = _remoteConfigService.onlinePaymentsEnabled;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text("Método de Pago:", style: TextStyle(fontWeight: FontWeight.bold)),
-        if (_remoteConfigService.onlinePaymentsEnabled)
-          RadioListTile<PaymentMethod>(
-            title: const Text("Pago Online (MercadoPago/Stripe)"),
-            value: PaymentMethod.online,
-            groupValue: _paymentMethod,
-            onChanged: (value) => setState(() => _paymentMethod = value!),
+
+        // Lógica condicional para el pago online
+        RadioListTile<PaymentMethod>(
+          title: Text(
+            "Pago Online (MercadoPago/Stripe)",
+            // Cambia el estilo del texto si está deshabilitado
+            style: TextStyle(color: onlinePaymentsActive ? null : Colors.grey),
           ),
+          subtitle: Text(
+            onlinePaymentsActive ? "Paga de forma segura con tarjeta" : "Muy pronto...",
+            style: TextStyle(color: onlinePaymentsActive ? null : Colors.grey),
+          ),
+          value: PaymentMethod.online,
+          groupValue: _paymentMethod,
+          // Deshabilita la opción si el interruptor de Remote Config está apagado
+          onChanged: onlinePaymentsActive
+              ? (value) => setState(() => _paymentMethod = value!)
+              : null,
+        ),
+
         RadioListTile<PaymentMethod>(
           title: const Text("Pago en Persona"),
           subtitle: const Text("Requiere confirmación del administrador"),
